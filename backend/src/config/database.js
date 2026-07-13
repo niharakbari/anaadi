@@ -1,5 +1,6 @@
 const mysql2 = require("mysql2");
 const config = require("./config");
+const logger = require("../utils/logger");
 
 const connection = mysql2.createConnection({
     host: config.database.host,
@@ -10,12 +11,12 @@ const connection = mysql2.createConnection({
 
 connection.connect((err) => {
     if (err) {
-        console.error(err);
-        console.error("Database Connection failed");
+        logger.error(err);
+        logger.error("Database Connection failed");
         return;
     }
 
-    console.log("Database connected");
+    logger.info("Database connected successfuly")
 });
 
 module.exports = connection;

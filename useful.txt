@@ -1,0 +1,342 @@
+//  db table
+
+use anaadi;
+
+CREATE TABLE design_images (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    original_filename VARCHAR(255) NOT NULL,
+
+    stored_filename VARCHAR(255) NOT NULL UNIQUE,
+
+    file_path VARCHAR(500) NOT NULL,
+
+    file_size BIGINT UNSIGNED NOT NULL,
+
+    mime_type VARCHAR(100) NOT NULL,
+
+    image_width INT UNSIGNED NOT NULL,
+
+    image_height INT UNSIGNED NOT NULL,
+
+    uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP
+);
+
+
+
+
+
+
+
+
+//  ai implementation idea
+
+ANAADI AI IMPLEMENTATION PLAN
+Objective
+
+Build an AI-powered jewellery image search system.
+
+The dealer uploads a real jewellery photo, and the system returns the most visually similar catalogue design from approximately 2,000 stored design images.
+
+The returned catalogue image already contains the design code (e.g., PS-0478-E), so there is no need to extract or store the code in the database during Phase 1.
+
+Overall Architecture
+Dealer
+    │
+    ▼
+Node.js Backend
+    │
+    ▼
+Temporary Upload
+    │
+    ▼
+Python AI Service
+    │
+    ▼
+Embedding Generation
+    │
+    ▼
+Similarity Search
+    │
+    ▼
+Top Matching Catalogue Images
+    │
+    ▼
+Node.js fetches metadata
+    │
+    ▼
+Frontend displays matching catalogue sheet
+Responsibilities
+Node.js Backend
+
+Responsible for:
+
+Uploading catalogue images
+Saving catalogue images to storage
+Storing image metadata in MySQL
+Uploading dealer search images
+Calling the Python AI service
+Returning search results
+
+Node.js does not perform AI.
+
+Python AI Service
+
+Responsible for:
+
+Loading the AI model
+Image preprocessing
+Generating image embeddings
+Comparing embeddings
+Returning Top-N matching image IDs
+
+Python does not handle database logic.
+
+Database
+
+Database stores metadata only.
+
+Table:
+
+design_images
+
+Stores:
+
+id
+original_filename
+stored_filename
+file_path
+file_size
+mime_type
+image_width
+image_height
+uploaded_at
+updated_at
+
+It does not store:
+
+image bytes
+embeddings
+similarity scores
+dealer uploads
+Permanent Images
+
+Client provides approximately 2,000 catalogue images.
+
+Example:
+
+PS-0478-E.jpg
+
+These images are
+
+uploaded once
+stored permanently
+indexed by AI
+
+These become the searchable catalogue.
+
+Dealer Search Images
+
+Dealer uploads
+
+ring_photo.jpg
+
+Workflow:
+
+Upload
+
+↓
+
+Temporary Folder
+
+↓
+
+AI Search
+
+↓
+
+Delete
+
+Dealer images are never stored permanently.
+
+AI Model
+
+We will use an open-source image embedding model (such as CLIP/OpenCLIP or another strong vision embedding model).
+
+Reason:
+
+Free
+No API cost
+Runs locally
+Designed for image similarity
+Suitable for production deployment
+
+We will not use ChatGPT, Gemini, or Claude Vision APIs for image search because they are not optimized for large-scale similarity retrieval.
+
+Embeddings
+
+Every catalogue image is converted into a numerical vector called an embedding.
+
+Example:
+
+Catalogue Image
+
+↓
+
+Embedding
+
+↓
+
+Stored in Vector Index
+
+Dealer image:
+
+Dealer Photo
+
+↓
+
+Embedding
+
+↓
+
+Compared with all catalogue embeddings
+
+The closest embeddings represent the most visually similar designs.
+
+Vector Search
+
+Instead of comparing raw images, the AI compares embeddings.
+
+Workflow:
+
+Dealer Embedding
+
+↓
+
+Vector Search
+
+↓
+
+Top 5 Similar Catalogue Images
+
+This is much faster and more accurate than comparing pixels.
+
+Image Preprocessing
+
+Preprocessing will be implemented during the AI phase.
+
+Possible preprocessing:
+
+resize image
+normalize colors
+remove unnecessary borders
+crop specification table if testing shows it reduces accuracy
+optionally separate multiple jewellery views into individual images
+
+We will not implement preprocessing now.
+
+We will first test using the original catalogue images.
+
+Only if accuracy needs improvement will preprocessing be added.
+
+Search Workflow
+Dealer uploads image
+
+↓
+
+Node.js stores image temporarily
+
+↓
+
+Python generates embedding
+
+↓
+
+Search vector index
+
+↓
+
+Return Top 5 matching catalogue image IDs
+
+↓
+
+Node.js fetches metadata
+
+↓
+
+Frontend displays matching catalogue images
+
+↓
+
+Temporary dealer image deleted
+Expected Accuracy
+
+Dataset characteristics:
+
+clean catalogue images
+white background
+high quality
+approximately 2,000 images
+
+Expected performance:
+
+Top-1 match: approximately 75–90%
+Top-5 match: approximately 90–95%
+
+Actual performance will be validated using the client's real catalogue before deployment.
+
+Future Improvements
+
+Possible future features:
+
+OCR extraction of design codes
+Search by design code
+Background removal
+Jewellery segmentation
+Better embedding models
+Fine-tuned jewellery model
+Search history
+Dealer accounts
+Analytics dashboard
+
+These are future enhancements, not part of Version 1.
+
+Final Development Roadmap
+Phase 1
+✔ Project Setup
+✔ Configuration
+✔ Database Connection
+✔ Logging
+
+Phase 2
+✔ Database Design
+⬜ Models
+⬜ CRUD
+
+Phase 3
+⬜ Multer
+⬜ File Storage Service
+
+Phase 4
+⬜ Upload APIs
+⬜ Search APIs
+
+Phase 5 (AI)
+⬜ Python AI Service
+⬜ AI Model (CLIP/OpenCLIP or similar)
+⬜ Embedding Generator
+⬜ Vector Index (FAISS)
+⬜ Similarity Search
+⬜ AI Integration with Node.js
+⬜ Return Top 5 Results
+
+Phase 6
+⬜ Frontend Integration
+⬜ Testing with Client Dataset
+⬜ Performance Optimization
+⬜ Deployment
+
+This plan keeps each layer focused on a single responsibility, avoids unnecessary complexity in the first version, and leaves clear extension points if the client later requests features like OCR, search history, or advanced analytics.

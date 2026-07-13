@@ -10,4 +10,10 @@ module.exports = {
         name: process.env.DB_NAME,
     },
 
+    upload: {
+        directory: process.env.UPLOAD_DIRECTORY,
+        maxFiles: Number(process.env.MAX_FILES_PER_UPLOAD),
+        // maxFileSize: Number(process.env.MAX_FILE_SIZE),
+    },
+
 };
