@@ -1,13 +1,32 @@
 const fs = require("fs/promises");
 const path = require("path");
 
-const config = require("../config");
+const sharp = require("sharp");
+
+const config = require("../config/config");
+
+
+
+/**
+ *  Returns image width and height using Sharp.
+
+ */
+
+async function getImageDimensions(imagePath) {
+  const metadata = await sharp(imagePath).metadata();
+
+  return {
+    width: metadata.width,
+    height: metadata.height,
+  };
+}
+
 
 /**
  * Returns absolute path of an uploaded image.
  */
 function getImagePath(fileName) {
-  return path.join(process.cwd(), config.upload.directory, fileName);
+  return path.join(process.cwd(), config.upload.designLibraryDirectory, fileName);
 }
 
 /**
@@ -38,6 +57,7 @@ async function read(fileName) {
 
 module.exports = {
   getImagePath,
+  getImageDimensions,
   exists,
   remove,
   read,

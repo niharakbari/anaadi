@@ -2,15 +2,18 @@ const multer = require("multer");
 const path = require("path");
 const crypto = require("crypto");
 
-const config = require("../config");
+const  AppError  = require("../utils/AppError");
+
+const config = require("../config/config");
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
-    cb(null, config.upload.directory);
+    cb(null, config.upload.designLibraryDirectory);
   },
 
   filename(req, file, cb) {
     const uniqueName =
+      "design_" +
       Date.now() +
       "-" +
       crypto.randomBytes(8).toString("hex") +

@@ -2,14 +2,18 @@ const mysql2 = require("mysql2");
 const config = require("./config");
 const logger = require("../utils/logger");
 
-const connection = mysql2.createConnection({
+const pool = mysql2.createPool({
     host: config.database.host,
     user: config.database.user,
     password: config.database.password,
     database: config.database.name,
+
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
 });
 
-connection.connect((err) => {
+pool.getConnection((err, connection) => {
     if (err) {
         logger.error(err);
         logger.error("Database Connection failed");
@@ -17,6 +21,8 @@ connection.connect((err) => {
     }
 
     logger.info("Database connected successfuly")
+
+    connection.release();
 });
 
-module.exports = connection;
+module.exports = pool.promise();

@@ -1,8 +1,8 @@
 const app = require("./app");
 
 
-const config = require("./src/config/config");
-const logger = require("./src/utils/logger");
+const config = require("./config/config");
+const logger = require("./utils/logger");
 
 
 app.listen(config.port, () => {
