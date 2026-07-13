@@ -1,30 +1,31 @@
 const db = require("../config/database");
 
-async function create(imageData) {
-  const sql = `
-    INSERT INTO design_images (
-      original_filename,
-      stored_filename,
-      file_path,
-      file_size,
-      mime_type,
-      image_width,
-      image_height
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `;
+async function create(imageData, connection = db.promise()) {
 
-  const [result] = await db.promise().execute(sql, [
-    imageData.original_filename,
-    imageData.stored_filename,
-    imageData.file_path,
-    imageData.file_size,
-    imageData.mime_type,
-    imageData.image_width,
-    imageData.image_height,
-  ]);
+    const sql = `
+        INSERT INTO design_images (
+            original_filename,
+            stored_filename,
+            file_path,
+            file_size,
+            mime_type,
+            image_width,
+            image_height
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
 
-  return result.insertId;
+    const [result] = await connection.execute(sql, [
+        imageData.original_filename,
+        imageData.stored_filename,
+        imageData.file_path,
+        imageData.file_size,
+        imageData.mime_type,
+        imageData.image_width,
+        imageData.image_height,
+    ]);
+
+    return result.insertId;
 }
 
 async function findById(id) {

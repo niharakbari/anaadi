@@ -11,9 +11,21 @@ module.exports = {
     },
 
     upload: {
-        directory: process.env.UPLOAD_DIRECTORY,
+        designLibraryDirectory: process.env.DESIGN_LIBRARY_DIRECTORY,
+        queryUploadDirectory: process.env.QUERY_UPLOAD_DIRECTORY,
         maxFiles: Number(process.env.MAX_FILES_PER_UPLOAD),
         // maxFileSize: Number(process.env.MAX_FILE_SIZE),
     },
+
+    jwt : {
+        token: process.env.JWT_SECRET,
+        expireTime: process.env.JWT_EXPIRES_IN
+    },
+
+    admin : {
+        email : process.env.ADMIN_EMAIL,
+        password : process.env.ADMIN_PASSWORD
+    },
+  
 
 };
