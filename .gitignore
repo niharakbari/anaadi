@@ -1,1 +1,14 @@
+# OS files
 .DS_Store
+
+# AI service local/runtime files
+ai-service/.venv/
+ai-service/venv/
+ai-service/.env
+ai-service/__pycache__/
+ai-service/*.py[cod]
+ai-service/*.log
+ai-service/temp/
+ai-service/uploads/
+ai-service/faiss.index
+ai-service/index/*.index
