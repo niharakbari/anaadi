@@ -10,8 +10,9 @@ const app = express();
 // Body Parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-
+// importing database
 const database = require("./config/database")
 
 
