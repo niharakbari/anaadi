@@ -1,2 +1,7 @@
-flask
+Flask
 python-dotenv
+Pillow
+open-clip-torch
+torch
+numpy<2
+faiss-cpu==1.8.0.post1

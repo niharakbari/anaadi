@@ -1,44 +1,49 @@
-# pyrefly: ignore [missing-import]
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, jsonify, request
 from services.search_service import SearchService
-import os
-import uuid
-from werkzeug.utils import secure_filename
 
 search_bp = Blueprint("search", __name__)
 search_service = SearchService()
 
+
 @search_bp.route("/search", methods=["POST"])
 def search_endpoint():
-    # Validate image field exists in multipart/form-data
-    if "image" not in request.files:
+    data = request.get_json(silent=True) or {}
+
+    # Validate image_path is present and is a non-empty string
+    if "image_path" not in data:
         return jsonify({
             "success": False,
-            "error": "No image field in request"
+            "message": "image_path is missing"
         }), 400
 
-    file = request.files["image"]
-
-    # Validate filename is not empty
-    if file.filename == "":
+    image_path = data.get("image_path")
+    if not isinstance(image_path, str) or not image_path.strip():
         return jsonify({
             "success": False,
-            "error": "No selected file"
+            "message": "image_path must be a non-empty string"
         }), 400
 
-    # Get upload folder configuration and create directory if missing
-    upload_folder = current_app.config.get("UPLOAD_FOLDER", "temp")
-    os.makedirs(upload_folder, exist_ok=True)
+    # Validate top_k: must be an integer between 1 and 100 (inclusive).
+    # Defaults to 5 when the caller omits it.
+    top_k = data.get("top_k", 5)
+    if not isinstance(top_k, int) or top_k < 1 or top_k > 100:
+        return jsonify({
+            "success": False,
+            "message": "top_k must be an integer between 1 and 100"
+        }), 400
 
-    # Generate a unique filename to prevent overwriting
-    original_filename = secure_filename(file.filename)
-    unique_filename = f"{uuid.uuid4().hex}_{original_filename}"
-    saved_image_path = os.path.join(upload_folder, unique_filename)
+    result = search_service.perform_search(image_path=image_path, top_k=top_k)
 
-    # Save the image
-    file.save(saved_image_path)
+    # Return 500 for unexpected internal failures, 200 for all successful
+    # outcomes including empty result sets.
+    if not result["success"]:
+        return jsonify(result), 500
+    return jsonify(result), 200
 
-    # Call SearchService with the saved image path
-    search_result = search_service.perform_search(saved_image_path)
-    return jsonify(search_result)
 
+@search_bp.route("/search/<int:design_id>", methods=["DELETE"])
+def delete_endpoint(design_id):
+    result = search_service.delete_embedding(design_id)
+    if not result["success"]:
+        return jsonify(result), 500
+    return jsonify(result), 200
