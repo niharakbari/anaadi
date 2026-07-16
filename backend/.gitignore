@@ -5,3 +5,7 @@ node_modules
 src/logs/*
 src/uploads/*
 uploads/
+
+
+# AI index files
+indexes/
