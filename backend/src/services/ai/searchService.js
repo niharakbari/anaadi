@@ -293,8 +293,8 @@ class SearchService {
 // ---------------------------------------------------------------------------
 // Singleton export
 // ---------------------------------------------------------------------------
-
 /**
+ * 
  * Application-wide singleton.
  * Route handlers import and call methods on this object directly.
  *

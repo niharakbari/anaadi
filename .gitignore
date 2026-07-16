@@ -1,14 +1,53 @@
-# OS files
+# OS
 .DS_Store
+Thumbs.db
 
-# AI service local/runtime files
-ai-service/.venv/
-ai-service/venv/
-ai-service/.env
-ai-service/__pycache__/
-ai-service/*.py[cod]
-ai-service/*.log
-ai-service/temp/
-ai-service/uploads/
-ai-service/faiss.index
-ai-service/index/*.index
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+build/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# AI service index files and runtime artifacts
+ai-service-python/faiss.index
+ai-service-python/index/*.index
+ai-service-python/temp/
+ai-service-python/uploads/
+
+# Uploads and logs (project-wide)
+uploads/
+src/logs/
+logs/
+*.log
+
+# Editor/IDE
+.vscode/
+.idea/
+.history/
+
+# OS-specific
+ehthumbs.db
+Icon\r
+
+# Misc
+.DS_Store
+.cache/
+.pytest_cache/
+
