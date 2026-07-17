@@ -4,7 +4,7 @@ async function buildImageMetadata(file) {
   const dimensions = await fileStorageService.getImageDimensions(file.path);
 
   return {
-    original_filename: file.filename,
+    original_filename: file.originalname,
     stored_filename: file.filename,
     file_path: file.path,
     file_size: file.size,

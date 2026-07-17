@@ -30,6 +30,10 @@ ai-service-python/faiss.index
 ai-service-python/index/*.index
 ai-service-python/temp/
 ai-service-python/uploads/
+indexes/
+backend/indexes/
+ai-models/
+backend/ai-models/
 
 # Uploads and logs (project-wide)
 uploads/
@@ -51,3 +55,6 @@ Icon\r
 .cache/
 .pytest_cache/
 
+Jewellery_Data/
+backend/uploads/
+ai-service-python/*.index

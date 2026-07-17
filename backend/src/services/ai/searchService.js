@@ -79,7 +79,7 @@ class SearchService {
     const knnResults = await indexService.searchKnn(embedding, k);
     const filtered   = knnResults.filter((r) => r.distance <= threshold);
 
-    return this._buildResults(filtered, options);
+    return await this._buildResults(filtered, options);
   }
 
   /**
@@ -191,12 +191,62 @@ class SearchService {
    * @param {boolean} [options.includeDistance=false]
    * @returns {SearchResult[]}
    */
-  _buildResults(knnResults, options) {
+  async _buildResults(knnResults, options) {
+    if (knnResults.length === 0) return [];
+
+    const designImageModel = require("../../models/designImageModel");
+
+    // Gather all valid imageIds
+    const imageIds = knnResults.map((r) => r.imageId).filter(Boolean);
+
+    let dbRows = [];
+    try {
+      // Execute ONE batch query to retrieve all metadata
+      dbRows = await designImageModel.findByIds(imageIds.map(Number));
+    } catch (error) {
+      logger.error(`Failed to retrieve metadata for search results: ${error.message}`);
+    }
+
+    // Build an in-memory lookup map by id
+    const metadataMap = new Map();
+    for (const row of dbRows) {
+      metadataMap.set(String(row.id), row);
+    }
+
+    // Map and merge metadata into results
     return knnResults.map(({ imageId, distance }) => {
+      const dbMetadata = metadataMap.get(String(imageId)) || {};
+
+      // Derive title from original_filename (e.g. "ring_design.png" -> "ring_design")
+      let title = "Unknown Design";
+      if (dbMetadata.original_filename) {
+        title = dbMetadata.original_filename.replace(/\.[^/.]+$/, ""); // strip extension
+      }
+
+      // Convert stored_filename into an image URL path
+      const imagePath = dbMetadata.stored_filename
+        ? `/uploads/design_library/${dbMetadata.stored_filename}`
+        : null;
+
       const result = {
         imageId,
-        // Cosine distance 0 → 100% similar; distance 1 → 0% similar.
         similarityScore: parseFloat(((1 - distance) * 100).toFixed(2)),
+        // Expose database columns
+        originalFilename: dbMetadata.original_filename || null,
+        storedFilename: dbMetadata.stored_filename || null,
+        filePath: dbMetadata.file_path || null,
+        fileSize: dbMetadata.file_size || null,
+        mimeType: dbMetadata.mime_type || null,
+        imageWidth: dbMetadata.image_width || null,
+        imageHeight: dbMetadata.image_height || null,
+        uploadedAt: dbMetadata.uploaded_at || null,
+        updatedAt: dbMetadata.updated_at || null,
+        // Frontend-specific derived fields
+        title,
+        sku: dbMetadata.id ? `SKU-${String(dbMetadata.id).padStart(4, "0")}` : `SKU-${imageId}`,
+        image: imagePath,
+        category: "Jewellery Design",
+        status: "active"
       };
 
       if (options.includeDistance === true) {

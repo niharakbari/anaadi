@@ -1,7 +1,7 @@
 import { cva } from 'class-variance-authority';
 import { cn } from '../../lib/utils';
 import { Slot } from '@radix-ui/react-slot';
-import { motion } from 'framer-motion';
+// import { motion } from 'framer-motion';
 
 // ─── Button Variants ─────────────────────────────────────────────────────────
 

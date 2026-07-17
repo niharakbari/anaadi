@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -191,38 +192,72 @@ export function Tooltip({ children, content, side = 'top', className }) {
 
 // ─── Dropdown Menu ────────────────────────────────────────────────────────────
 export function DropdownMenu({ trigger, items, align = 'left', className }) {
+  const [open, setOpen] = useState(false);
+  const timerRef = useRef(null);
+
+  const handleOpen = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    timerRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 150);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
   return (
-    <div className={cn('relative inline-block group/menu', className)}>
-      {trigger}
-      <div className="absolute hidden group-focus-within/menu:block group-hover/menu:block z-40 min-w-[180px] mt-1.5 py-1 bg-white border border-stone-200 rounded-lg shadow-lg"
-        style={{ [align === 'right' ? 'right' : 'left']: 0 }}
+    <DropdownMenuPrimitive.Root open={open} onOpenChange={setOpen}>
+      <div
+        onMouseEnter={handleOpen}
+        onMouseLeave={handleClose}
+        className={cn('inline-block', className)}
       >
-        {items.map((item, i) =>
-          item.separator ? (
-            <div key={i} className="h-px bg-stone-100 my-1" />
-          ) : (
-            <button
-              key={i}
-              onClick={item.onClick}
-              disabled={item.disabled}
-              className={cn(
-                'w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left',
-                'transition-colors duration-100',
-                item.destructive
-                  ? 'text-error hover:bg-error-subtle'
-                  : 'text-stone-700 hover:bg-stone-50 hover:text-stone-900',
-                item.disabled && 'opacity-50 cursor-not-allowed'
-              )}
-            >
-              {item.icon && <span className="text-stone-400">{item.icon}</span>}
-              {item.label}
-              {item.shortcut && (
-                <kbd className="ml-auto text-[10px] text-stone-300">{item.shortcut}</kbd>
-              )}
-            </button>
-          )
-        )}
+        <DropdownMenuPrimitive.Trigger asChild>
+          {trigger}
+        </DropdownMenuPrimitive.Trigger>
       </div>
-    </div>
+
+      <DropdownMenuPrimitive.Portal>
+        <DropdownMenuPrimitive.Content
+          align={align === 'right' ? 'end' : 'start'}
+          sideOffset={6}
+          onMouseEnter={handleOpen}
+          onMouseLeave={handleClose}
+          className="z-50 min-w-[180px] py-1 bg-white border border-stone-200 rounded-lg shadow-lg focus:outline-none"
+        >
+          {items.map((item, i) =>
+            item.separator ? (
+              <DropdownMenuPrimitive.Separator key={i} className="h-px bg-stone-100 my-1" />
+            ) : (
+              <DropdownMenuPrimitive.Item
+                key={i}
+                disabled={item.disabled}
+                onClick={item.onClick}
+                className={cn(
+                  'w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left cursor-pointer select-none focus:outline-none',
+                  item.destructive
+                    ? 'text-error focus:bg-error-subtle focus:text-error'
+                    : 'text-stone-700 focus:bg-stone-50 focus:text-stone-900',
+                  item.disabled && 'opacity-50 cursor-not-allowed pointer-events-none'
+                )}
+              >
+                {item.icon && <span className="text-stone-400">{item.icon}</span>}
+                {item.label}
+                {item.shortcut && (
+                  <kbd className="ml-auto text-[10px] text-stone-300">{item.shortcut}</kbd>
+                )}
+              </DropdownMenuPrimitive.Item>
+            )
+          )}
+        </DropdownMenuPrimitive.Content>
+      </DropdownMenuPrimitive.Portal>
+    </DropdownMenuPrimitive.Root>
   );
 }

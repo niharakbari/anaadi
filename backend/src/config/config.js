@@ -2,6 +2,7 @@ require("dotenv").config();
 
 module.exports = {
     port: process.env.PORT,
+    clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
 
     database: {
         host: process.env.DB_HOST,
@@ -26,6 +27,8 @@ module.exports = {
         email : process.env.ADMIN_EMAIL,
         password : process.env.ADMIN_PASSWORD
     },
+
+    
   
 
 };

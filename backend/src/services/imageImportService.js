@@ -11,7 +11,7 @@ async function importImages(files) {
     throw new AppError("No images uploaded.", 400);
   }
 
-  const connection = await db.promise().getConnection();
+  const connection = await db.getConnection();
 
   try {
     await connection.beginTransaction();

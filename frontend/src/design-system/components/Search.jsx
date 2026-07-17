@@ -24,15 +24,15 @@ export function SearchInput({
     lg: 'h-12 text-sm pl-12 pr-12',
   };
   const iconSizes = {
-    sm: 'w-3.5 h-3.5 left-2.5',
-    md: 'w-4   h-4   left-3',
-    lg: 'w-5   h-5   left-3.5',
+    sm: 'left-2.5',
+    md: 'left-3',
+    lg: 'left-3.5',
   };
 
   return (
     <div className={cn('relative flex items-center', className)}>
       {/* Left Icon */}
-      <span className={cn('absolute text-stone-400 pointer-events-none z-10', iconSizes[size])}>
+      <span className={cn('absolute top-1/2 -translate-y-1/2 flex items-center justify-center text-stone-400 pointer-events-none z-10', iconSizes[size])}>
         {loading ? (
           <svg className="animate-spin-slow" viewBox="0 0 24 24" fill="none" width="16" height="16">
             <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/>

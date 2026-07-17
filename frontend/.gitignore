@@ -1,4 +1,18 @@
-node_modules
-dist
+# Dependency directory
+node_modules/
+
+# Production build artifacts
+dist/
+
+# Local environment secret configurations
 .env
 .env.*
+!.env.example
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Editor/IDE configurations
+.vscode/
+.idea/

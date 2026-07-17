@@ -30,6 +30,8 @@ const sharp = require("sharp");
 const ort = require("onnxruntime-node");
 const fs = require("fs/promises");
 
+const aiConfig = require("../../config/aiConfig");
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -38,12 +40,12 @@ const fs = require("fs/promises");
  * Expected input spatial resolution for ViT-B-32.
  * The model was trained with 224 × 224 centre-cropped images.
  */
-const MODEL_INPUT_SIZE = 224;
 
 /**
  * Output dimensionality of the ViT-B-32 visual encoder.
  */
-const EMBEDDING_DIM = 512;
+const MODEL_INPUT_SIZE = aiConfig.MODEL_INPUT_SIZE;
+const EMBEDDING_DIM = aiConfig.EMBEDDING_DIM;
 
 /**
  * ImageNet-style normalisation constants used by OpenCLIP pre-processing.
@@ -57,10 +59,12 @@ const IMAGENET_STD  = [0.26862954, 0.26130258, 0.27577711];
  * The file is expected at:  <project_root>/ai-models/openclip/visual.onnx
  */
 const MODEL_PATH = path.resolve(
-  process.cwd(),
-  "ai-models",
-  "openclip",
-  "visual.onnx"
+  __dirname,
+  "..",
+  "..",
+  "..",
+  aiConfig.MODEL_DIRECTORY,
+  aiConfig.MODEL_FILENAME
 );
 
 // ---------------------------------------------------------------------------

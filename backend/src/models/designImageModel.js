@@ -1,6 +1,6 @@
 const db = require("../config/database");
 
-async function create(imageData, connection = db.promise()) {
+async function create(imageData, connection = db) {
 
     const sql = `
         INSERT INTO design_images (
@@ -35,7 +35,7 @@ async function findById(id) {
     WHERE id = ?
   `;
 
-  const [rows] = await db.promise().execute(sql, [id]);
+  const [rows] = await db.execute(sql, [id]);
 
   return rows[0];
 }
@@ -47,7 +47,7 @@ async function findAll() {
     ORDER BY uploaded_at DESC
   `;
 
-  const [rows] = await db.promise().query(sql);
+  const [rows] = await db.query(sql);
 
   return rows;
 }
@@ -66,7 +66,7 @@ async function update(id, imageData) {
     WHERE id = ?
   `;
 
-  const [result] = await db.promise().execute(sql, [
+  const [result] = await db.execute(sql, [
     imageData.original_filename,
     imageData.stored_filename,
     imageData.file_path,
@@ -86,7 +86,7 @@ async function remove(id) {
     WHERE id = ?
   `;
 
-  const [result] = await db.promise().execute(sql, [id]);
+  const [result] = await db.execute(sql, [id]);
 
   return result.affectedRows;
 }
@@ -100,14 +100,26 @@ async function exists(id) {
     ) AS exists_flag
   `;
 
-  const [rows] = await db.promise().execute(sql, [id]);
+  const [rows] = await db.execute(sql, [id]);
 
   return Boolean(rows[0].exists_flag);
+}
+
+async function findByIds(ids) {
+  if (!Array.isArray(ids) || ids.length === 0) return [];
+  const sql = `
+    SELECT *
+    FROM design_images
+    WHERE id IN (?)
+  `;
+  const [rows] = await db.query(sql, [ids]);
+  return rows;
 }
 
 module.exports = {
   create,
   findById,
+  findByIds,
   findAll,
   update,
   remove,

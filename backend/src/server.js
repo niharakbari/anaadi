@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 const app = require("./app");
 const { embeddingService, indexService } = require("./services/ai");
 
@@ -6,10 +8,25 @@ const logger = require("./utils/logger");
 
 async function bootstrap() {
     try {
+        // Ensure upload directories exist on startup
+        const uploadDirs = [
+            path.resolve(config.upload.designLibraryDirectory),
+            path.resolve(config.upload.queryUploadDirectory)
+        ];
+
+        for (const dir of uploadDirs) {
+            if (!fs.existsSync(dir)) {
+                logger.info(`Creating missing upload directory: ${dir}`);
+                fs.mkdirSync(dir, { recursive: true });
+            }
+        }
+
         logger.info("Initializing AI services...");
 
-        await embeddingService.initialise();
-        await indexService.initialise();
+        await Promise.all([
+            embeddingService.initialise(),
+            indexService.initialise()
+        ]);
 
         logger.info("AI services initialized successfully.");
 

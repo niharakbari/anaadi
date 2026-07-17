@@ -1,11 +1,32 @@
-node_modules
+# Dependency directory
+node_modules/
+
+# Local environment secret configurations
 .env
 .env.*
 !.env.example
+
+# Runtime logs
 src/logs/*
+*.log
+npm-debug.log*
+
+# Upload and media directories
 src/uploads/*
 uploads/
 
-
-# AI index files
+# AI vector index and companion maps
 indexes/
+
+# AI model assets (ONNX weights and tokenizers)
+ai-models/
+
+# Editor/IDE configurations
+.vscode/
+.idea/
+.history/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+ehthumbs.db

@@ -184,7 +184,7 @@ export function Checkbox({ id, label, checked, onChange, disabled, className, ..
         />
         <div
           className={cn(
-            'w-4 h-4 rounded-xs border-2 border-stone-300 bg-white',
+            'w-4 h-4 rounded-sm border-2 border-stone-300 bg-white',
             'transition-all duration-150',
             'peer-checked:bg-accent peer-checked:border-accent',
             'peer-focus-visible:ring-2 peer-focus-visible:ring-accent/20',
@@ -211,7 +211,7 @@ export function Switch({ id, label, checked, onChange, disabled, size = 'md', cl
     md: { track: 'w-10 h-5.5',thumb: 'w-4 h-4',   translate: 'translate-x-5' },
     lg: { track: 'w-12 h-6',  thumb: 'w-4.5 h-4.5',translate: 'translate-x-6'},
   };
-  const s = sizes[size] || sizes.md;
+  // const s = sizes[size] || sizes.md;
 
   return (
     <label

@@ -291,6 +291,11 @@ class IndexService {
     const label = this._imageIdToLabel.get(imageId);
     if (label === undefined) return false;
 
+
+    // Soft deletion:
+    // The vector remains physically inside the HNSW graph.
+    // markDelete() only excludes it from future searches.
+    // Rebuild() is required to reclaim space.
     // markDelete() is a soft delete — the point is excluded from future kNN
     // results immediately but the slot is not reclaimed until rebuild().
     this._index.markDelete(label);
