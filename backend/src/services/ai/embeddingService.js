@@ -150,8 +150,7 @@ class EmbeddingService {
    * @throws  {AppError} 400 – if imageBuffer is not a valid Buffer.
    * @throws  {AppError} 503 – if the service has not been initialised.
    * @throws  {AppError} 500 – if ONNX inference fails.
-   *
-
+   */
   async embed(imageBuffer) {
     // 1. Guard: service must be initialised.
     if (!this._isReady) {

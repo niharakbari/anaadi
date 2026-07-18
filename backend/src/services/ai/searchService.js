@@ -175,6 +175,15 @@ class SearchService {
     return removed;
   }
 
+  /**
+   * Resets and clears all vectors from the HNSW search index.
+   * @returns {Promise<void>}
+   */
+  async clearAll() {
+    await indexService.clear();
+    logger.info("SearchService.clearAll(): Cleared all vectors from HNSW index.");
+  }
+
   // -------------------------------------------------------------------------
   // Private helpers
   // -------------------------------------------------------------------------

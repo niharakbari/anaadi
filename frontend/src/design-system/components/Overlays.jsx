@@ -192,45 +192,19 @@ export function Tooltip({ children, content, side = 'top', className }) {
 
 // ─── Dropdown Menu ────────────────────────────────────────────────────────────
 export function DropdownMenu({ trigger, items, align = 'left', className }) {
-  const [open, setOpen] = useState(false);
-  const timerRef = useRef(null);
-
-  const handleOpen = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    timerRef.current = setTimeout(() => {
-      setOpen(false);
-    }, 150);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
-
   return (
-    <DropdownMenuPrimitive.Root open={open} onOpenChange={setOpen}>
-      <div
-        onMouseEnter={handleOpen}
-        onMouseLeave={handleClose}
-        className={cn('inline-block', className)}
-      >
-        <DropdownMenuPrimitive.Trigger asChild>
+    <DropdownMenuPrimitive.Root>
+      <DropdownMenuPrimitive.Trigger asChild>
+        <div className={cn('inline-block cursor-pointer', className)}>
           {trigger}
-        </DropdownMenuPrimitive.Trigger>
-      </div>
+        </div>
+      </DropdownMenuPrimitive.Trigger>
 
       <DropdownMenuPrimitive.Portal>
         <DropdownMenuPrimitive.Content
           align={align === 'right' ? 'end' : 'start'}
           sideOffset={6}
-          onMouseEnter={handleOpen}
-          onMouseLeave={handleClose}
-          className="z-50 min-w-[180px] py-1 bg-white border border-stone-200 rounded-lg shadow-lg focus:outline-none"
+          className="z-50 min-w-[180px] py-1 bg-white border border-stone-200 rounded-lg shadow-lg focus:outline-none animate-in fade-in-80 zoom-in-95"
         >
           {items.map((item, i) =>
             item.separator ? (
@@ -239,12 +213,14 @@ export function DropdownMenu({ trigger, items, align = 'left', className }) {
               <DropdownMenuPrimitive.Item
                 key={i}
                 disabled={item.disabled}
-                onClick={item.onClick}
+                onSelect={(e) => {
+                  if (item.onClick) item.onClick(e);
+                }}
                 className={cn(
-                  'w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left cursor-pointer select-none focus:outline-none',
+                  'w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left cursor-pointer select-none focus:outline-none transition-colors duration-150',
                   item.destructive
-                    ? 'text-error focus:bg-error-subtle focus:text-error'
-                    : 'text-stone-700 focus:bg-stone-50 focus:text-stone-900',
+                    ? 'text-red-600 focus:bg-red-50 focus:text-red-700 hover:bg-red-50 hover:text-red-700'
+                    : 'text-stone-700 focus:bg-stone-50 focus:text-stone-900 hover:bg-stone-50',
                   item.disabled && 'opacity-50 cursor-not-allowed pointer-events-none'
                 )}
               >

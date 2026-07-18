@@ -213,6 +213,18 @@ class IndexService {
     return this.saveIndex();
   }
 
+  /**
+   * Resets and clears the HNSW vector index completely.
+   * @param {number} [maxElements=100000]
+   * @returns {Promise<void>}
+   */
+  async clear(maxElements = 100_000) {
+    this._assertReady("clear");
+    await this._createAndActivate(maxElements);
+    await this.saveIndex();
+    logger.info("IndexService.clear(): HNSW vector index completely cleared and persisted.");
+  }
+
   // -------------------------------------------------------------------------
   // Vector management — public
   // -------------------------------------------------------------------------

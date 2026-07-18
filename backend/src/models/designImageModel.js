@@ -52,6 +52,45 @@ async function findAll() {
   return rows;
 }
 
+async function findAllPaginated({ page = 1, limit = 10, search = "" }) {
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.max(1, parseInt(limit, 10) || 10);
+  const offset = (pageNum - 1) * limitNum;
+
+  let whereClauses = [];
+  let params = [];
+
+  if (search && search.trim() !== "") {
+    whereClauses.push("(original_filename LIKE ? OR stored_filename LIKE ?)");
+    params.push(`%${search.trim()}%`, `%${search.trim()}%`);
+  }
+
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
+  const countSql = `SELECT COUNT(*) AS total FROM design_images ${whereSql}`;
+  const [countRows] = await db.query(countSql, params);
+  const totalItems = countRows[0] ? countRows[0].total : 0;
+  const totalPages = Math.ceil(totalItems / limitNum) || 1;
+
+  const dataSql = `
+    SELECT *
+    FROM design_images
+    ${whereSql}
+    ORDER BY uploaded_at DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  const [rows] = await db.query(dataSql, [...params, limitNum, offset]);
+
+  return {
+    rows,
+    totalItems,
+    totalPages,
+    currentPage: pageNum,
+    limit: limitNum,
+  };
+}
+
 async function update(id, imageData) {
   const sql = `
     UPDATE design_images
@@ -121,6 +160,7 @@ module.exports = {
   findById,
   findByIds,
   findAll,
+  findAllPaginated,
   update,
   remove,
   exists,

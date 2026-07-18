@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, X, Image, FileText, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { UploadCloud, X,FileText, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 // ─── Upload Zone ──────────────────────────────────────────────────────────────
@@ -14,6 +14,26 @@ export function UploadZone({
   const [dragOver, setDragOver] = useState(false);
   const [files, setFiles]       = useState([]);
   const [error, setError]       = useState(null);
+  const onUploadRef = useRef(onUpload);
+  const filesRef = useRef([]);
+
+  useEffect(() => {
+    onUploadRef.current = onUpload;
+  }, [onUpload]);
+
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
+
+  useEffect(() => {
+    return () => {
+      filesRef.current.forEach((f) => {
+        if (f.preview) {
+          URL.revokeObjectURL(f.preview);
+        }
+      });
+    };
+  }, []);
 
   const formatSize = (bytes) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -38,10 +58,20 @@ export function UploadZone({
       progress: 0,
     }));
     setFiles((prev) => (multiple ? [...prev, ...enriched] : enriched));
-    onUpload?.(enriched.map((e) => e.file));
-  }, [multiple, maxSize, onUpload]);
+  }, [multiple, maxSize]);
 
-  const removeFile = (id) => setFiles((prev) => prev.filter((f) => f.id !== id));
+  const removeFile = (id) => setFiles((prev) => {
+    const removed = prev.find((f) => f.id === id);
+    if (removed?.preview) {
+      URL.revokeObjectURL(removed.preview);
+    }
+
+    return prev.filter((f) => f.id !== id);
+  });
+
+  useEffect(() => {
+    onUploadRef.current?.(files.map((entry) => entry.file));
+  }, [files]);
 
   return (
     <div className={cn('space-y-3', className)}>
@@ -157,6 +187,7 @@ export function UploadZone({
               {f.status === 'uploading' && <Loader2 size={16} className="text-accent animate-spin-slow" />}
               {f.status === 'error'     && <AlertCircle size={16} className="text-error" />}
               <button
+                type="button"
                 onClick={() => removeFile(f.id)}
                 className="text-stone-300 hover:text-stone-600 transition-colors duration-100"
               >

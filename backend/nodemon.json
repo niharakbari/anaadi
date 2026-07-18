@@ -1,0 +1,17 @@
+{
+  "watch": ["src"],
+  "ext": "js,json",
+  "ignore": [
+    "uploads/**",
+    "indexes/**",
+    "ai-models/**",
+    "ai-data/**",
+    "src/logs/**",
+    "logs/**",
+    "*.hnsw",
+    "*.labels.json",
+    "*.log",
+    "*.bin",
+    "node_modules/**"
+  ]
+}

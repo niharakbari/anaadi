@@ -6,6 +6,10 @@ const  AppError  = require("../utils/AppError");
 
 const config = require("../config/config");
 
+const MAX_FILES_PER_UPLOAD = Number.isFinite(config.upload.maxFiles) && config.upload.maxFiles > 0
+  ? config.upload.maxFiles
+  : 100;
+
 const storage = multer.diskStorage({
   destination(req, file, cb) {
     cb(null, config.upload.designLibraryDirectory);
@@ -41,9 +45,12 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    files: config.upload.maxFiles,
+    files: MAX_FILES_PER_UPLOAD,
     // fileSize: config.upload.maxFileSize,
   },
 });
 
-module.exports = upload;
+module.exports = {
+  upload,
+  MAX_FILES_PER_UPLOAD,
+};
