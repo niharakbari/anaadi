@@ -1,6 +1,6 @@
 export const PAGE_TITLES = {
   dashboard: 'Dashboard',
-  search: 'AI Search',
+  search: 'Search Designs',
   upload: 'Upload Designs',
   catalogue: 'Catalogue',
   history: 'Search History',

@@ -6,29 +6,34 @@ import AISearchPage from './pages/AISearch/AISearchPage';
 import UploadPage from './pages/Upload/UploadPage';
 import CataloguePage from './pages/Catalogue/CataloguePage';
 import SearchHistoryPage from './pages/SearchHistory/SearchHistoryPage';
+import SavedSearchesPage from './pages/SavedSearches/SavedSearchesPage';
 import AIStatusPage from './pages/AIStatus/AIStatusPage';
 import SettingsPage from './pages/Settings/SettingsPage';
 import DesignSystemPage from './pages/DesignSystem/DesignSystemPage';
 import NotFoundPage from './pages/NotFound/NotFoundPage';
 
 import { AISearchProvider } from './context/AISearchContext';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
   return (
-    <AISearchProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public Login Route (No Layout Shell Wrapper) */}
-          <Route path="/login" element={<LoginPage />} />
+    <AuthProvider>
+      <AISearchProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Login Route (No Layout Shell Wrapper) */}
+            <Route path="/login" element={<LoginPage />} />
 
-          {/* Main Application Interface (Wrapped in Sidebar/Topbar Shell Layout) */}
-          <Route path="/" element={<Layout />}>
+            {/* Main Application Interface (Wrapped in Sidebar/Topbar Shell Layout) */}
+            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/login" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="search" element={<AISearchPage />} />
             <Route path="upload" element={<UploadPage />} />
             <Route path="catalogue" element={<CataloguePage />} />
             <Route path="history" element={<SearchHistoryPage />} />
+            <Route path="saved" element={<SavedSearchesPage />} />
             <Route path="status" element={<AIStatusPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFoundPage />} />
@@ -39,5 +44,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </AISearchProvider>
+    </AuthProvider>
   );
 }

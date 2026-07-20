@@ -1,7 +1,6 @@
-const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const authModel = require("../models/authModel");
+const authService = require("../services/authService");
 const config = require("../config/config");
 
 const generateToken = require("../utils/generateToken");
@@ -45,20 +44,7 @@ exports.login = async (req, res, next) => {
         }
     }
 
-    const user = await authModel.getUserByEmail(email);
-
-    if (!user) {
-        return next(new AppError("Invalid email or password.", 401));
-    }
-
-    const isPasswordCorrect = await bcrypt.compare(
-        password,
-        user.password
-    );
-
-    if (!isPasswordCorrect) {
-        return next(new AppError("Invalid email or password.", 401));
-    }
+    const user = await authService.authenticate(email, password);
 
     const token = generateToken({
         id: user.user_id,

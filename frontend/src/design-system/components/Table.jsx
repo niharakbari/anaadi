@@ -112,6 +112,21 @@ export function TableCell({ children, className, align = 'left', muted }) {
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
 export function Pagination({ page, totalPages, onPageChange, className }) {
+  const getPages = (current, total) => {
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 4) {
+      return [1, 2, 3, 4, 5, '...', total];
+    }
+    if (current >= total - 3) {
+      return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total];
+  };
+
+  const pages = getPages(page, totalPages);
+
   return (
     <div className={cn('flex items-center justify-between px-4 py-3 border-t border-stone-100', className)}>
       <span className="text-xs text-stone-400">
@@ -126,8 +141,14 @@ export function Pagination({ page, totalPages, onPageChange, className }) {
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 3L5 7L8.5 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
         </button>
 
-        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-          const p = i + 1;
+        {pages.map((p, i) => {
+          if (p === '...') {
+            return (
+              <span key={`ellipsis-${i}`} className="text-stone-400 px-1 text-xs font-medium">
+                ...
+              </span>
+            );
+          }
           return (
             <button
               key={p}

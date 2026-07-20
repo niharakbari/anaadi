@@ -10,4 +10,7 @@ router.post(
     searchController.searchByImage
 );
 
+router.get("/history", searchController.getHistory);
+router.delete("/history", searchController.clearHistory);
+
 module.exports = router;

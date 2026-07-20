@@ -1,11 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { H2, Body, Label } from '../../design-system/components/Typography';
 import { SearchInput } from '../../design-system/components/Search';
 import { Card, ImageCard } from '../../design-system/components/Cards';
 import { UploadZone } from '../../design-system/components/Upload';
 import { EmptyState } from '../../design-system/components/States';
 import { Button } from '../../design-system/components/Button';
-import { Alert } from '../../design-system/components/Feedback';
+import { Alert, ToastContainer } from '../../design-system/components/Feedback';
+import { Dialog } from '../../design-system/components/Overlays';
+import { AdvancedLightbox } from '../../design-system/components/AdvancedLightbox';
+import { Input, Textarea, FormField } from '../../design-system/components/FormControls';
 import { X, Loader2, RotateCcw } from 'lucide-react';
 import { useAISearch } from '../../context/AISearchContext';
 
@@ -25,17 +28,104 @@ export default function AISearchPage() {
     setSearchError,
     resultLimit,
     setResultLimit,
+    currentSearchHistoryId,
+    setCurrentSearchHistoryId,
     searchNext,
   } = useAISearch();
 
   const [searching, setSearching] = useState(false);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [saveModalCard, setSaveModalCard] = useState(null);
+  const [saveName, setSaveName] = useState('');
+  const [saveDealer, setSaveDealer] = useState('');
+  const [saveNotes, setSaveNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [toasts, setToasts] = useState([]);
+  const [previewIndex, setPreviewIndex] = useState(null);
+  const [queryPreviewOpen, setQueryPreviewOpen] = useState(false);
+
+  const saveNameInputRef = useRef(null);
+
+  // Auto-select text when save modal opens
+  useEffect(() => {
+    if (saveModalOpen && saveNameInputRef.current) {
+      // Small timeout ensures the DOM has rendered the input
+      setTimeout(() => {
+        saveNameInputRef.current.select();
+      }, 50);
+    }
+  }, [saveModalOpen]);
 
   const apiBaseUrl = useMemo(() => (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200').replace(/\/$/, ''), []);
+
+  const addToast = (type, title, description) => {
+    const id = Math.random().toString(36).slice(2);
+    setToasts((prev) => [...prev, { id, type, title, description }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 6000);
+  };
+
+  const generateDefaultName = (filename) => {
+    if (!filename) {
+      return `Reference Design - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    }
+    const namePart = filename.split('.').slice(0, -1).join('.') || filename;
+    const readable = namePart
+      .replace(/[-_]/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
+    return `${readable} Reference`;
+  };
+
+  const openSaveModal = (card) => {
+    setSaveModalCard(card);
+    setSaveName(generateDefaultName(uploadedFile?.name));
+    setSaveDealer('');
+    setSaveNotes('');
+    setSaveModalOpen(true);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!saveName.trim() || !currentSearchHistoryId || !saveModalCard) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/saved-searches`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          searchHistoryId: currentSearchHistoryId,
+          designImageId: saveModalCard.imageId || saveModalCard.id || saveModalCard.sku.split('-')[1], // Depending on schema
+          name: saveName.trim() || generateDefaultName(uploadedFile?.name),
+          dealerName: saveDealer.trim(),
+          notes: saveNotes.trim()
+        }),
+        credentials: 'include'
+      });
+
+      if (res.status === 401) {
+        window.dispatchEvent(new Event('unauthorized'));
+        return;
+      }
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to save search');
+
+      setSaveModalOpen(false);
+      addToast('success', 'Search Saved', `Successfully saved as "${saveName.trim()}".`);
+    } catch (err) {
+      addToast('error', 'Save Failed', err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const executeImageSearch = async (file, limit = resultLimit) => {
     if (!file) return;
     setSearching(true);
     setSearchError(null);
+    setCurrentSearchHistoryId(null);
     try {
       const formData = new FormData();
       formData.append('image', file);
@@ -46,11 +136,18 @@ export default function AISearchPage() {
         body: formData,
         credentials: 'include',
       });
+      if (res.status === 401) {
+        window.dispatchEvent(new Event('unauthorized'));
+        return;
+      }
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || 'Image search failed.');
       }
       setSearchResults(Array.isArray(data.results) ? data.results : (Array.isArray(data) ? data : []));
+      if (data.searchHistoryId) {
+        setCurrentSearchHistoryId(data.searchHistoryId);
+      }
       setHasSearched(true);
     } catch (err) {
       setSearchError(err.message || 'Image search failed.');
@@ -100,21 +197,25 @@ export default function AISearchPage() {
             <div className="space-y-3 h-full flex flex-col justify-between">
               <Label className="text-stone-500 block font-semibold">Reference Image</Label>
               {previewUrl ? (
-                <div className="relative flex-1 min-h-[160px] bg-stone-50 border border-stone-200 rounded-xl overflow-hidden flex flex-col items-center justify-center p-4">
+                <div 
+                  className="relative flex-1 min-h-[160px] bg-stone-50 border border-stone-200 rounded-xl overflow-hidden flex flex-col items-center justify-center p-4 cursor-pointer hover:shadow-md transition-shadow group"
+                  onClick={() => setQueryPreviewOpen(true)}
+                  title="Click to preview"
+                >
                   <img
                     src={previewUrl}
                     alt="Preview"
-                    className="max-h-[140px] max-w-full object-contain rounded-lg shadow-sm"
+                    className="max-h-[140px] max-w-full object-contain rounded-lg shadow-sm group-hover:scale-105 transition-transform duration-200"
                   />
                   <button
                     type="button"
-                    onClick={handleClear}
-                    className="absolute top-2 right-2 p-1.5 rounded-full bg-white/85 hover:bg-white text-stone-500 hover:text-stone-700 shadow-xs transition-colors border border-stone-200"
+                    onClick={(e) => { e.stopPropagation(); handleClear(); }}
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-white/85 hover:bg-white text-stone-500 hover:text-stone-700 shadow-xs transition-colors border border-stone-200 z-10"
                     title="Remove image"
                   >
                     <X size={14} />
                   </button>
-                  <p className="text-xs text-stone-400 mt-2 truncate max-w-full font-mono">
+                  <p className="text-xs text-stone-400 mt-2 truncate max-w-full font-mono relative z-10">
                     {uploadedFile?.name}
                   </p>
                 </div>
@@ -220,7 +321,7 @@ export default function AISearchPage() {
         <H2 className="text-stone-800 text-base font-semibold">
           {hasSearched ? 'Search Results' : 'Recommended Designs'}
         </H2>
-        
+
         {searchError && (
           <Alert type="error" title="Search Failed">
             {searchError}
@@ -235,7 +336,7 @@ export default function AISearchPage() {
         ) : hasSearched ? (
           searchResults.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {searchResults.map((card) => {
+              {searchResults.map((card, index) => {
                 const imgUrl = card.image
                   ? (card.image.startsWith('http') ? card.image : `${apiBaseUrl}${card.image}`)
                   : null;
@@ -248,7 +349,8 @@ export default function AISearchPage() {
                     similarity={card.similarityScore !== undefined ? card.similarityScore / 100 : card.similarity}
                     status={card.status || 'active'}
                     image={imgUrl}
-                    onClick={() => {}}
+                    onClick={() => setPreviewIndex(index)}
+                    onSave={currentSearchHistoryId ? () => openSaveModal(card) : undefined}
                   />
                 );
               })}
@@ -268,6 +370,71 @@ export default function AISearchPage() {
           />
         )}
       </div>
+
+      <AdvancedLightbox
+        open={previewIndex !== null || queryPreviewOpen}
+        onClose={() => { setPreviewIndex(null); setQueryPreviewOpen(false); }}
+        items={queryPreviewOpen ? [{
+          image: previewUrl,
+          title: uploadedFile?.name || 'Reference Image',
+          sku: 'Query Image'
+        }] : searchResults}
+        currentIndex={queryPreviewOpen ? 0 : (previewIndex ?? 0)}
+        onIndexChange={queryPreviewOpen ? undefined : setPreviewIndex}
+        onViewDetails={(item) => console.log('View details', item)}
+        apiBaseUrl={apiBaseUrl}
+      />
+
+      <Dialog
+        open={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        title="Save Search Context"
+        description="Save this design match along with your query image for later reference."
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setSaveModalOpen(false)}>Cancel</Button>
+            <Button variant="primary" onClick={handleSave} loading={saving} disabled={!saveName.trim()}>Save</Button>
+          </>
+        }
+      >
+        <form onSubmit={handleSave} className="space-y-4 pt-2">
+          <FormField label="Saved Search Name" htmlFor="saveName">
+            <Input
+              id="saveName"
+              ref={saveNameInputRef}
+              placeholder="e.g. XYZ Dealer Ring"
+              value={saveName}
+              onChange={e => setSaveName(e.target.value)}
+              autoFocus
+            />
+          </FormField>
+
+          <FormField label="Dealer / Customer Name (Optional)" htmlFor="saveDealer">
+            <Input
+              id="saveDealer"
+              placeholder="e.g. Acme Jewellery Corp"
+              value={saveDealer}
+              onChange={e => setSaveDealer(e.target.value)}
+            />
+          </FormField>
+
+          <FormField label="Optional Notes" htmlFor="saveNotes">
+            <Textarea
+              id="saveNotes"
+              placeholder="e.g. Dealer requested yellow gold..."
+              value={saveNotes}
+              onChange={e => setSaveNotes(e.target.value)}
+              rows={3}
+            />
+          </FormField>
+        </form>
+      </Dialog>
+
+      <ToastContainer
+        toasts={toasts}
+        onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
+      />
     </div>
   );
 }

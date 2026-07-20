@@ -86,40 +86,70 @@ async function deleteImage(req, res, next) {
 }
 
 async function deleteAllImages(req, res, next) {
+  const db = require("../config/database");
+  let connection;
   try {
-    const db = require("../config/database");
-    const allImages = await designImageModel.findAll();
+    connection = await db.getConnection();
+    await connection.beginTransaction();
 
-    // 1. Reset HNSW index completely
+    // 1. Database Deletions in Dependency Order
+    // search_history_results depends on search_history and design_images
+    const [delResults] = await connection.query("DELETE FROM search_history_results");
+    
+    // saved_searches, saved_designs, flagged_designs depend on design_images and search_history
+    const [delSavedSearches] = await connection.query("DELETE FROM saved_searches");
+    const [delSavedDesigns] = await connection.query("DELETE FROM saved_designs");
+    const [delFlagged] = await connection.query("DELETE FROM flagged_designs");
+
+    // search_history depends on query images but is referenced by others
+    const [delHistory] = await connection.query("DELETE FROM search_history");
+
+    // design_images is the base table
+    const [delImages] = await connection.query("DELETE FROM design_images");
+
+    await connection.commit();
+
+    // 2. Clear physical image files
+    const deleteFilesInDir = async (dirPath) => {
+      try {
+        const files = await fs.readdir(dirPath);
+        for (const file of files) {
+          if (file !== ".gitkeep") {
+            await fs.unlink(path.join(dirPath, file)).catch(() => {});
+          }
+        }
+      } catch (err) {
+        if (err.code !== 'ENOENT') {
+           logger.warn(`Could not clear directory ${dirPath}: ${err.message}`);
+        }
+      }
+    };
+
+    await deleteFilesInDir(path.resolve(process.cwd(), "uploads", "design_library"));
+    await deleteFilesInDir(path.resolve(process.cwd(), "uploads", "query_uploads"));
+
+    // 3. Clear AI vector index
+    let indexVectorsRemoved = delImages.affectedRows;
     try {
-      await searchService.clearAll();
+      if (typeof searchService.clearAll === 'function') {
+        await searchService.clearAll();
+      }
     } catch (err) {
       logger.warn(`Could not clear HNSW index during bulk delete: ${err.message}`);
     }
 
-    // 2. Truncate MySQL design_images table
-    await db.query("TRUNCATE TABLE design_images");
-
-    // 3. Clear all physical image files in uploads/design_library
-    const libraryDir = path.resolve(process.cwd(), "uploads", "design_library");
-    try {
-      const files = await fs.readdir(libraryDir);
-      for (const file of files) {
-        if (file !== ".gitkeep") {
-          await fs.unlink(path.join(libraryDir, file)).catch(() => {});
-        }
-      }
-    } catch (err) {
-      logger.warn(`Could not clear physical directory during bulk delete: ${err.message}`);
-    }
-
     return res.json({
       success: true,
-      message: `Successfully deleted all ${allImages.length} design references and reset vector index.`,
-      deletedCount: allImages.length,
+      deletedImages: delImages.affectedRows,
+      deletedSearchHistory: delHistory.affectedRows,
+      deletedSavedDesigns: delSavedSearches.affectedRows + delSavedDesigns.affectedRows,
+      indexVectorsRemoved: indexVectorsRemoved
     });
   } catch (error) {
+    if (connection) await connection.rollback();
     next(error);
+  } finally {
+    if (connection) connection.release();
   }
 }
 

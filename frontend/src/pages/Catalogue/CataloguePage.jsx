@@ -7,7 +7,7 @@ import { Checkbox } from '../../design-system/components/FormControls';
 import { Badge } from '../../design-system/components/DataDisplay';
 import { SearchInput } from '../../design-system/components/Search';
 import { ImageCard } from '../../design-system/components/Cards';
-import { DropdownMenu, Dialog, Sheet } from '../../design-system/components/Overlays';
+import { DropdownMenu, Dialog, Sheet, Lightbox } from '../../design-system/components/Overlays';
 import { Alert } from '../../design-system/components/Feedback';
 import { cn } from '../../lib/utils';
 
@@ -26,6 +26,7 @@ export default function CataloguePage() {
   // Preview & Delete states
   const [activeDetailItem, setActiveDetailItem] = useState(null);
   const [activePreviewImage, setActivePreviewImage] = useState(null);
+  const [activeLightboxImage, setActiveLightboxImage] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -48,6 +49,10 @@ export default function CataloguePage() {
       const res = await fetch(`${apiBaseUrl}/api/design-images/?${queryParams.toString()}`, {
         credentials: 'include',
       });
+      if (res.status === 401) {
+        window.dispatchEvent(new Event('unauthorized'));
+        return;
+      }
       const payload = await res.json();
       if (res.ok && payload.success && Array.isArray(payload.data)) {
         setItems(payload.data);
@@ -109,9 +114,13 @@ export default function CataloguePage() {
         method: 'DELETE',
         credentials: 'include',
       });
+      if (res.status === 401) {
+        window.dispatchEvent(new Event('unauthorized'));
+        return;
+      }
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || 'Failed to delete reference.');
+        throw new Error(data.message || 'Failed to delete design.');
       }
 
       setItems((prev) => prev.filter((img) => img.id !== itemToDelete.id));
@@ -128,7 +137,7 @@ export default function CataloguePage() {
       setToastMessage({
         type: 'error',
         title: 'Deletion Failed',
-        message: err.message || 'An error occurred while deleting the design reference.',
+        message: err.message || 'An error occurred while deleting the design.',
       });
     } finally {
       setDeleting(false);
@@ -145,6 +154,10 @@ export default function CataloguePage() {
         method: 'DELETE',
         credentials: 'include',
       });
+      if (res.status === 401) {
+        window.dispatchEvent(new Event('unauthorized'));
+        return;
+      }
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || 'Failed to clear catalogue.');
@@ -296,7 +309,9 @@ export default function CataloguePage() {
                 key={row.id}
                 title={row.filename}
                 image={row.thumbnail}
-                onClick={() => openDetail(row)}
+                onClick={() => setActiveLightboxImage(row.thumbnail)}
+                onViewDetails={() => openDetail(row)}
+                onDelete={() => setItemToDelete(row)}
                 status={row.status}
               />
             ))}
@@ -333,7 +348,7 @@ export default function CataloguePage() {
                     <TableCell className="py-4">
                       <button
                         type="button"
-                        onClick={() => openDetail(row)}
+                        onClick={() => setActiveLightboxImage(row.thumbnail)}
                         className="w-16 h-16 bg-stone-50 border border-stone-200 rounded-lg flex items-center justify-center overflow-hidden shrink-0 shadow-sm transition-all duration-200 hover:scale-[1.04] hover:border-accent focus:outline-none"
                         title="Click to view details"
                       >
@@ -377,7 +392,7 @@ export default function CataloguePage() {
                           { label: 'View Details', icon: <ExternalLink size={13} />, onClick: () => openDetail(row) },
                           { label: 'Re-index', icon: <RefreshCw size={13} />, onClick: () => {}, disabled: row.status === 'indexing' },
                           { separator: true },
-                          { label: 'Delete Reference', icon: <Trash2 size={13} />, onClick: () => setItemToDelete(row), destructive: true },
+                          { label: 'Delete Design', icon: <Trash2 size={13} />, onClick: () => setItemToDelete(row), destructive: true },
                         ]}
                       />
                     </TableCell>
@@ -399,7 +414,7 @@ export default function CataloguePage() {
       <Sheet
         open={!!activeDetailItem}
         onClose={() => setActiveDetailItem(null)}
-        title="Design Reference Details"
+        title="Design Details"
         width="460px"
       >
         {activeDetailItem && (
@@ -475,7 +490,7 @@ export default function CataloguePage() {
                 onClick={() => setItemToDelete(activeDetailItem)}
               >
                 <Trash2 size={14} className="mr-1.5" />
-                Delete Reference
+                Delete Design
               </Button>
             </div>
           </div>
@@ -486,8 +501,8 @@ export default function CataloguePage() {
       <Dialog
         open={!!itemToDelete}
         onClose={() => !deleting && setItemToDelete(null)}
-        title="Delete Design Reference"
-        description="Are you sure you want to delete this reference image? This action will permanently remove the record from MySQL, delete the physical image file from storage, and unindex its feature vector from the HNSW search model."
+        title="Delete Design"
+        description="Are you sure you want to delete this design? This action will permanently remove the record from MySQL, delete the physical image file from storage, and unindex its feature vector from the HNSW search model."
         footer={
           <>
             <Button
@@ -536,6 +551,11 @@ export default function CataloguePage() {
             </Button>
           </>
         }
+      />
+      <Lightbox
+        open={!!activeLightboxImage}
+        onClose={() => setActiveLightboxImage(null)}
+        image={activeLightboxImage}
       />
     </div>
   );

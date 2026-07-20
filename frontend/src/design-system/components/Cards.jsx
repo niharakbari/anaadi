@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
-import { MoreHorizontal, TrendingUp, TrendingDown, ExternalLink } from 'lucide-react';
+import { MoreHorizontal, TrendingUp, TrendingDown, ExternalLink, Trash2 } from 'lucide-react';
 
 // ─── Base Card ────────────────────────────────────────────────────────────────
 export function Card({ children, className, hover = false, padding = 'md', onClick, ...props }) {
@@ -76,6 +76,9 @@ export function ImageCard({
   similarity,
   status,
   onClick,
+  onViewDetails,
+  onDelete,
+  onSave,
   className,
 }) {
   return (
@@ -116,11 +119,35 @@ export function ImageCard({
           </div>
         )}
 
-        {/* Top-right action */}
-        <div className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <button className="w-7 h-7 rounded-md bg-white/90 backdrop-blur-sm border border-stone-200 flex items-center justify-center shadow-sm hover:bg-white transition-colors duration-100">
-            <ExternalLink size={12} className="text-stone-600" />
-          </button>
+        {/* Top-right actions */}
+        <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          {onSave && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onSave(); }}
+              className="w-7 h-7 rounded-md bg-white/90 backdrop-blur-sm border border-stone-200 flex items-center justify-center shadow-sm hover:bg-stone-50 hover:text-accent transition-colors duration-100"
+              title="Save Search"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-stone-600 hover:text-accent"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+            </button>
+          )}
+          {onViewDetails && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onViewDetails(); }}
+              className="w-7 h-7 rounded-md bg-white/90 backdrop-blur-sm border border-stone-200 flex items-center justify-center shadow-sm hover:bg-white transition-colors duration-100"
+              title="View Details"
+            >
+              <ExternalLink size={12} className="text-stone-600" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="w-7 h-7 rounded-md bg-white/90 backdrop-blur-sm border border-stone-200 flex items-center justify-center shadow-sm hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors duration-100 text-stone-600"
+              title="Delete Design"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
         </div>
       </div>
 

@@ -59,6 +59,11 @@ export default function UploadPage() {
         credentials: 'include',
       });
 
+      if (response.status === 401) {
+        window.dispatchEvent(new Event('unauthorized'));
+        return;
+      }
+
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok && response.status !== 207) {
@@ -161,7 +166,7 @@ export default function UploadPage() {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
         {/* Left Panel: Primary Upload Zone */}
         <div className="lg:col-span-3 flex flex-col">
           <Card className="p-6 flex-1 flex flex-col justify-between min-h-[320px]">
@@ -178,7 +183,7 @@ export default function UploadPage() {
         </div>
 
         {/* Right Panel: Upload Actions & Info */}
-        <div className="lg:col-span-2 flex flex-col">
+        <div className="lg:col-span-2 flex flex-col sticky top-6">
           <Card className="p-6 flex-1 flex flex-col justify-between min-h-[320px]">
             <div className="space-y-4">
               <H2 className="text-stone-800 text-base font-semibold">Indexing Summary</H2>

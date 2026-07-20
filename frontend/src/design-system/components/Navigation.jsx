@@ -1,8 +1,9 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Search, Upload, Database, Settings,
-  Gem, Clock, Activity, LogOut
+  Gem, Clock, Activity, LogOut, Bookmark
 } from 'lucide-react';
 
 import { cn } from '../../lib/utils';
@@ -11,10 +12,11 @@ import { Avatar } from './DataDisplay';
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard',      id: 'dashboard' },
-  { icon: Search,          label: 'AI Search',      id: 'search'    },
+  { icon: Search,          label: 'Search Designs', id: 'search'    },
   { icon: Upload,          label: 'Upload',         id: 'upload'    },
   { icon: Database,        label: 'Catalogue',      id: 'catalogue' },
   { icon: Clock,           label: 'Search History', id: 'history'   },
+  { icon: Bookmark,        label: 'Saved Searches', id: 'saved'     },
   { icon: Activity,        label: 'AI Status',      id: 'status'    },
 ];
 
@@ -23,6 +25,8 @@ const bottomItems = [
 ];
 
 export function Sidebar({ onItemClick, className }) {
+  const { logout } = useAuth();
+
   return (
     <aside
       className={cn(
@@ -71,7 +75,7 @@ export function Sidebar({ onItemClick, className }) {
             <span className="text-xs font-medium text-stone-600 truncate">Rahul Verma</span>
           </div>
           <button
-            onClick={() => console.log('Mock logout')}
+            onClick={logout}
             className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors focus:outline-none shrink-0"
             title="Log Out"
           >

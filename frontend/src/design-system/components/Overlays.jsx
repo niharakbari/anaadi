@@ -237,3 +237,54 @@ export function DropdownMenu({ trigger, items, align = 'left', className }) {
     </DropdownMenuPrimitive.Root>
   );
 }
+
+// ─── Lightbox ─────────────────────────────────────────────────────────────────
+export function Lightbox({ open, onClose, image, alt }) {
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape' && open) onClose?.(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (open) document.body.style.overflow = 'hidden';
+    else       document.body.style.overflow = '';
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-stone-900/90 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+            className="relative z-10 max-w-[90vw] max-h-[90vh] flex items-center justify-center"
+          >
+            <button
+              onClick={onClose}
+              className="absolute -top-12 right-0 p-2 text-white hover:text-stone-300 transition-colors"
+            >
+              <X size={24} />
+            </button>
+            <img
+              src={image}
+              alt={alt || 'Preview'}
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            />
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}

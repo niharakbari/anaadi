@@ -1,14 +1,22 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { Gem, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { Card } from '../../design-system/components/Cards';
 import { FormField, Input } from '../../design-system/components/FormControls';
 import { Button } from '../../design-system/components/Button';
 import { Body } from '../../design-system/components/Typography';
-import { Alert } from '../../design-system/components/Feedback';
+import { Alert, ToastContainer } from '../../design-system/components/Feedback';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { checkAuth, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   // Authentication states
   const [email, setEmail] = useState('');
@@ -16,8 +24,16 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [toasts, setToasts] = useState([]);
 
-  // Simulating future authentication logic
+  const apiBaseUrl = useMemo(() => (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200').replace(/\/$/, ''), []);
+
+  const addToast = (type, title, description) => {
+    const id = Math.random().toString(36).slice(2);
+    setToasts((prev) => [...prev, { id, type, title, description }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
+  };
+
   const handleSignIn = async (e) => {
     e.preventDefault();
     setError('');
@@ -30,12 +46,35 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    // Mock API authentication delay
-    setTimeout(() => {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Invalid email or password.');
+      }
+
+      await checkAuth();
+
+      addToast('success', 'Login Successful', 'Login successful.');
       setLoading(false);
-      // Redirection to main Dashboard
-      navigate('/dashboard');
-    }, 1000);
+
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1000);
+    } catch (err) {
+      setLoading(false);
+      setError(err.message || 'Invalid email or password.');
+      addToast('error', 'Login Failed', err.message || 'Invalid email or password.');
+    }
   };
 
   return (
@@ -127,6 +166,11 @@ export default function LoginPage() {
         </div>
 
       </div>
+
+      <ToastContainer
+        toasts={toasts}
+        onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
+      />
     </div>
   );
 }

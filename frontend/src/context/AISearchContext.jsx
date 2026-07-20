@@ -9,7 +9,9 @@ export function AISearchProvider({ children }) {
   const [searchResults, setSearchResults] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState(null);
-  const [resultLimit, setResultLimit] = useState(10);
+  const [resultLimit, setResultLimit] = useState(5);
+
+  const [currentSearchHistoryId, setCurrentSearchHistoryId] = useState(null);
 
   const searchNext = useCallback(() => {
     if (previewUrl) {
@@ -21,6 +23,7 @@ export function AISearchProvider({ children }) {
     setSearchResults([]);
     setHasSearched(false);
     setSearchError(null);
+    setCurrentSearchHistoryId(null);
   }, [previewUrl]);
 
   const value = {
@@ -38,6 +41,8 @@ export function AISearchProvider({ children }) {
     setSearchError,
     resultLimit,
     setResultLimit,
+    currentSearchHistoryId,
+    setCurrentSearchHistoryId,
     searchNext,
   };
 
