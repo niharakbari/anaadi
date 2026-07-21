@@ -1,0 +1,135 @@
+{
+  "queries": [
+    {
+      "queryImage": "Media (1)",
+      "category": "A",
+      "verified": true,
+      "exactMatches": [
+        "0478"
+      ],
+      "similarMatches": [],
+      "evaluationNotes": "Exact/near exact match to CAD render 0478.",
+      "expectedBehavior": {
+        "idealRank": 1,
+        "acceptableTopK": 5
+      }
+    },
+    {
+      "queryImage": "0797 (upper image)",
+      "category": "A",
+      "verified": true,
+      "exactMatches": [
+        "0556"
+      ],
+      "similarMatches": [
+        "0557",
+        "0561",
+        "0563",
+        "0883"
+      ],
+      "evaluationNotes": "Approximately 90% match to 0556 (only major difference is missing diamonds). Expected ranking: 0556 first, then 0557/0561/0563, 0883 later.",
+      "expectedBehavior": {
+        "idealRank": 1,
+        "acceptableTopK": 5
+      }
+    },
+    {
+      "queryImage": "0490",
+      "category": "B",
+      "verified": true,
+      "exactMatches": [],
+      "similarMatches": [
+        "0944"
+      ],
+      "evaluationNotes": "Similar design to 0944.",
+      "expectedBehavior": {
+        "shouldRetrieveSimilar": true,
+        "acceptableTopK": 10
+      }
+    },
+    {
+      "queryImage": "0582",
+      "category": "B",
+      "verified": true,
+      "exactMatches": [],
+      "similarMatches": [
+        "0503",
+        "0556",
+        "0557"
+      ],
+      "evaluationNotes": "Similar to 0503, 0556, and 0557.",
+      "expectedBehavior": {
+        "shouldRetrieveSimilar": true,
+        "acceptableTopK": 10
+      }
+    },
+    {
+      "queryImage": "0033",
+      "category": "B",
+      "verified": true,
+      "exactMatches": [],
+      "similarMatches": [
+        "0059"
+      ],
+      "evaluationNotes": "Similar style to 0059. These patterns should retrieve similar catalogue designs.",
+      "expectedBehavior": {
+        "shouldRetrieveSimilar": true,
+        "acceptableTopK": 10
+      }
+    },
+    {
+      "queryImage": "0658",
+      "category": "B",
+      "verified": true,
+      "exactMatches": [],
+      "similarMatches": [
+        "0470",
+        "0478",
+        "0944"
+      ],
+      "evaluationNotes": "No exact match found. Related leaf-style designs should appear, but not near the top.",
+      "expectedBehavior": {
+        "shouldRetrieveSimilar": true,
+        "acceptableTopK": 10
+      }
+    },
+    {
+      "queryImage": "0573",
+      "category": "B",
+      "verified": true,
+      "exactMatches": [],
+      "similarMatches": [
+        "0895"
+      ],
+      "evaluationNotes": "No exact match. 0895 has similar design language and may appear lower in results.",
+      "expectedBehavior": {
+        "shouldRetrieveSimilar": true,
+        "acceptableTopK": 10
+      }
+    },
+    {
+      "queryImage": "0572",
+      "category": "B",
+      "verified": true,
+      "exactMatches": [],
+      "similarMatches": [],
+      "evaluationNotes": "Contains leaf/petal motifs. Similar leaf-style catalogue designs are acceptable.",
+      "expectedBehavior": {
+        "shouldRetrieveSimilar": true,
+        "acceptableTopK": 10
+      }
+    },
+    {
+      "queryImage": "0797 (bottom image)",
+      "category": "C",
+      "verified": true,
+      "exactMatches": [],
+      "similarMatches": [],
+      "evaluationNotes": "Probably missing from dataset.",
+      "expectedBehavior": {
+        "exactMatchExpected": false,
+        "shouldRetrieveReasonableSimilarDesigns": true
+      }
+    }
+  ]
+}

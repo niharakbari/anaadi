@@ -4,7 +4,9 @@ const AISearchContext = createContext(null);
 
 export function AISearchProvider({ children }) {
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [originalFile, setOriginalFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [originalPreviewUrl, setOriginalPreviewUrl] = useState(null);
   const [searchVal, setSearchVal] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
@@ -17,8 +19,13 @@ export function AISearchProvider({ children }) {
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
+    if (originalPreviewUrl && originalPreviewUrl !== previewUrl) {
+      URL.revokeObjectURL(originalPreviewUrl);
+    }
     setUploadedFile(null);
+    setOriginalFile(null);
     setPreviewUrl(null);
+    setOriginalPreviewUrl(null);
     setSearchVal('');
     setSearchResults([]);
     setHasSearched(false);
@@ -29,8 +36,12 @@ export function AISearchProvider({ children }) {
   const value = {
     uploadedFile,
     setUploadedFile,
+    originalFile,
+    setOriginalFile,
     previewUrl,
     setPreviewUrl,
+    originalPreviewUrl,
+    setOriginalPreviewUrl,
     searchVal,
     setSearchVal,
     searchResults,

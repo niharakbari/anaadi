@@ -9,15 +9,20 @@ import { Alert, ToastContainer } from '../../design-system/components/Feedback';
 import { Dialog } from '../../design-system/components/Overlays';
 import { AdvancedLightbox } from '../../design-system/components/AdvancedLightbox';
 import { Input, Textarea, FormField } from '../../design-system/components/FormControls';
-import { X, Loader2, RotateCcw } from 'lucide-react';
+import { X, Loader2, RotateCcw, Crop } from 'lucide-react';
 import { useAISearch } from '../../context/AISearchContext';
+import { ImageCropperModal } from '../../design-system/components/ImageCropperModal';
 
 export default function AISearchPage() {
   const {
     uploadedFile,
     setUploadedFile,
+    originalFile,
+    setOriginalFile,
     previewUrl,
     setPreviewUrl,
+    originalPreviewUrl,
+    setOriginalPreviewUrl,
     searchVal,
     setSearchVal,
     searchResults,
@@ -43,6 +48,7 @@ export default function AISearchPage() {
   const [toasts, setToasts] = useState([]);
   const [previewIndex, setPreviewIndex] = useState(null);
   const [queryPreviewOpen, setQueryPreviewOpen] = useState(false);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
 
   const saveNameInputRef = useRef(null);
 
@@ -159,10 +165,20 @@ export default function AISearchPage() {
   const handleUpload = (files) => {
     if (files.length > 0) {
       const file = files[0];
+      const url = URL.createObjectURL(file);
+      setOriginalFile(file);
+      setOriginalPreviewUrl(url);
       setUploadedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      setPreviewUrl(url);
       executeImageSearch(file);
     }
+  };
+
+  const handleCropComplete = (croppedFile, croppedUrl) => {
+    setUploadedFile(croppedFile);
+    setPreviewUrl(croppedUrl);
+    setCropModalOpen(false);
+    executeImageSearch(croppedFile);
   };
 
   const handleTextSearch = (e) => {
@@ -198,26 +214,42 @@ export default function AISearchPage() {
               <Label className="text-stone-500 block font-semibold">Reference Image</Label>
               {previewUrl ? (
                 <div 
-                  className="relative flex-1 min-h-[160px] bg-stone-50 border border-stone-200 rounded-xl overflow-hidden flex flex-col items-center justify-center p-4 cursor-pointer hover:shadow-md transition-shadow group"
+                  className="relative flex-1 bg-stone-50 border border-stone-200 rounded-xl overflow-hidden flex flex-col items-center justify-center cursor-pointer hover:shadow-md transition-all group"
                   onClick={() => setQueryPreviewOpen(true)}
                   title="Click to preview"
+                  style={{ minHeight: '160px', maxHeight: '400px' }}
                 >
                   <img
                     src={previewUrl}
                     alt="Preview"
-                    className="max-h-[140px] max-w-full object-contain rounded-lg shadow-sm group-hover:scale-105 transition-transform duration-200"
+                    className="w-full h-full object-contain rounded-lg group-hover:scale-105 transition-transform duration-300"
+                    style={{ maxHeight: '400px' }}
                   />
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); handleClear(); }}
-                    className="absolute top-2 right-2 p-1.5 rounded-full bg-white/85 hover:bg-white text-stone-500 hover:text-stone-700 shadow-xs transition-colors border border-stone-200 z-10"
-                    title="Remove image"
-                  >
-                    <X size={14} />
-                  </button>
-                  <p className="text-xs text-stone-400 mt-2 truncate max-w-full font-mono relative z-10">
-                    {uploadedFile?.name}
-                  </p>
+                  <div className="absolute top-2 right-2 flex flex-col gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleClear(); }}
+                      className="p-2 rounded-full bg-stone-900/50 hover:bg-stone-900/70 text-white backdrop-blur-md shadow-sm transition-colors flex items-center justify-center"
+                      title="Remove image"
+                    >
+                      <X size={16} />
+                    </button>
+                    {originalPreviewUrl && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setCropModalOpen(true); }}
+                        className="p-2 rounded-full bg-accent/80 hover:bg-accent text-white backdrop-blur-md shadow-sm transition-colors flex items-center justify-center"
+                        title="Crop Image"
+                      >
+                        <Crop size={16} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-stone-900/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                    <p className="text-xs text-white truncate max-w-full font-mono relative z-10">
+                      {uploadedFile?.name}
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col">
@@ -434,6 +466,13 @@ export default function AISearchPage() {
       <ToastContainer
         toasts={toasts}
         onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
+      />
+
+      <ImageCropperModal
+        open={cropModalOpen}
+        onClose={() => setCropModalOpen(false)}
+        imageSrc={originalPreviewUrl}
+        onCropComplete={handleCropComplete}
       />
     </div>
   );
