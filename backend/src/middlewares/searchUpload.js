@@ -3,20 +3,7 @@
 const multer = require("multer");
 
 const AppError = require("../utils/AppError");
-
-// -----------------------------------------------------------------------------
-// Multer Memory Storage
-// -----------------------------------------------------------------------------
-// Query images are used only for AI inference.
-// They are never persisted to disk.
-// -----------------------------------------------------------------------------
-
 const storage = multer.memoryStorage();
-
-// -----------------------------------------------------------------------------
-// Image Validation
-// -----------------------------------------------------------------------------
-
 function fileFilter(req, file, cb) {
     const allowedMimeTypes = [
         "image/jpeg",
@@ -35,11 +22,6 @@ function fileFilter(req, file, cb) {
         )
     );
 }
-
-// -----------------------------------------------------------------------------
-// Multer Instance
-// -----------------------------------------------------------------------------
-
 const searchUpload = multer({
     storage,
     fileFilter,

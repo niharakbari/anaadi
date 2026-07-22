@@ -23,10 +23,27 @@ async function bootstrap() {
 
         logger.info("Initializing AI services...");
 
-        await Promise.all([
-            embeddingService.initialise(),
-            indexService.initialise()
-        ]);
+        await embeddingService.initialise();
+        await indexService.initialise();
+
+        const aiContext = embeddingService.getContext();
+        const vectorCount = indexService._index ? indexService._index.getCurrentCount() : 0;
+
+        logger.info(`
+==========================================
+AI ENGINE
+==========================================
+Active Model          ${aiContext.id}
+Model Name            ${aiContext.name}
+Variant               ${aiContext.variant}
+Version               ${aiContext.version}
+Embedding Dimension   ${aiContext.dimension}
+Distance Metric       ${aiContext.search.metric}
+Search Threshold      ${aiContext.search.threshold}
+Index Path            ${aiContext.paths.index}
+Metadata Path         ${aiContext.paths.metadata}
+Loaded Vector Count   ${vectorCount}
+==========================================`);
 
         logger.info("AI services initialized successfully.");
 

@@ -213,7 +213,7 @@ export default function AISearchPage() {
             <div className="space-y-3 h-full flex flex-col justify-between">
               <Label className="text-stone-500 block font-semibold">Reference Image</Label>
               {previewUrl ? (
-                <div 
+                <div
                   className="relative flex-1 bg-stone-50 border border-stone-200 rounded-xl overflow-hidden flex flex-col items-center justify-center cursor-pointer hover:shadow-md transition-all group"
                   onClick={() => setQueryPreviewOpen(true)}
                   title="Click to preview"

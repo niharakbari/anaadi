@@ -54,7 +54,6 @@ export default async function getCroppedImg(
     rotation
   );
 
-  // set canvas size to match the bounding box
   canvas.width = bBoxWidth;
   canvas.height = bBoxHeight;
 
@@ -76,7 +75,6 @@ export default async function getCroppedImg(
     pixelCrop.height
   );
 
-  // set canvas width to final desired crop size - this will clear existing context
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
 

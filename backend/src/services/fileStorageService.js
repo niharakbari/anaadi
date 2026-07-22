@@ -5,8 +5,6 @@ const sharp = require("sharp");
 
 const config = require("../config/config");
 
-
-
 /**
  *  Returns image width and height using Sharp.
 
@@ -21,12 +19,11 @@ async function getImageDimensions(imagePath) {
   };
 }
 
-
 /**
  * Returns absolute path of an uploaded image.
  */
 function getImagePath(fileName) {
-  return path.join(process.cwd(), config.upload.designLibraryDirectory, fileName);
+  return path.resolve(__dirname, "..", "..", config.upload.designLibraryDirectory, fileName);
 }
 
 /**

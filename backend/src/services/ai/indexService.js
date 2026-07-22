@@ -2,23 +2,12 @@
 
 /**
  * @fileoverview IndexService
- *
- * Manages the full lifecycle of the HNSW approximate nearest-neighbour index
- * built on top of hnswlib-node.
- *
- * Public responsibilities:
- *   - Boot-time initialisation  (initialise)
- *   - Index creation / load / save  (createIndex, loadIndex, saveIndex)
- *   - Runtime vector management  (addVector, addVectorBatch, removeVector)
- *   - Similarity search  (searchKnn)
- *   - Full index rebuild from the design library  (rebuild)
- *
+ * Manages the full lifecycle of the HNSW approximate nearest-neighbour index.
+ * 
  * HNSW parameter guide:
  *   M               – bidirectional links per node (16–64). Higher → better recall, more RAM.
  *   efConstruction  – candidate-list size during build (100–500). Higher → slower but better graph.
  *   efSearch        – candidate-list size at query time (≥ k).
- *
- * @module services/ai/indexService
  */
 
 const fs   = require("fs/promises");
@@ -28,14 +17,6 @@ const { HierarchicalNSW } = require("hnswlib-node");
 
 const logger   = require("../../utils/logger");
 const AppError = require("../../utils/AppError");
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-/** Output dimension of the ViT-B-32 visual encoder. Must match EmbeddingService. */
-const EMBEDDING_DIM = 512;
-
 /** Distance space. 'cosine' is correct for L2-normalised embeddings. */
 const HNSW_SPACE = "cosine";
 
@@ -48,52 +29,38 @@ const HNSW_EF_CONSTRUCTION = 200;
 /** Candidate-list size at query time. Must be ≥ any requested k. */
 const HNSW_EF_SEARCH = 50;
 
-/** Absolute path to the persisted HNSW binary. */
-const INDEX_PATH = path.resolve(process.cwd(), "indexes", "jewellery.hnsw");
-
-/**
- * Companion JSON file.
- * Stores the label ↔ imageId bidirectional map so it survives restarts.
- */
-const LABELS_PATH = path.resolve(
-  process.cwd(),
-  "indexes",
-  "jewellery.labels.json"
-);
-
 /** Image extensions recognised when scanning the design library. */
 const IMAGE_EXTENSIONS = new Set([
   ".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif",
 ]);
 
+const config = require("../../config/config");
+
 /** Absolute path to the design library directory. */
 const DESIGN_LIBRARY_PATH = path.resolve(
-  process.cwd(),
-  "uploads",
-  "design_library"
+  __dirname,
+  "..",
+  "..",
+  "..",
+  config.upload.designLibraryDirectory
 );
-
-// ---------------------------------------------------------------------------
-// IndexService
-// ---------------------------------------------------------------------------
-
 class IndexService {
   constructor() {
-    /** @type {HierarchicalNSW | null} */
+    
     this._index = null;
 
-    /** @type {boolean} */
+    
     this._isReady = false;
 
     /**
-     * integer label → imageId  (for kNN result resolution)
-     * @type {Map<number, string>}
+     * integer label → { imageId, viewNumber, totalViews }
+     * @type {Map<number, object>}
      */
     this._labelToImageId = new Map();
 
     /**
-     * imageId → integer label  (for O(1) duplicate / delete lookups)
-     * @type {Map<string, number>}
+     * imageId → Set of integer labels  (for O(1) duplicate / delete lookups)
+     * @type {Map<string, Set<number>>}
      */
     this._imageIdToLabel = new Map();
 
@@ -104,31 +71,24 @@ class IndexService {
      */
     this._nextLabel = 0;
   }
-
-  // -------------------------------------------------------------------------
-  // Lifecycle — public
-  // -------------------------------------------------------------------------
-
-  /**
-   * Entry point called once at server boot.
-   * Loads a persisted index if one exists; otherwise creates a fresh one.
-   * Idempotent — subsequent calls are no-ops.
-   *
-   * @param {number} [maxElements=100_000]
-   * @returns {Promise<void>}
-   * @throws {AppError}
-   */
+  /** Boot-time initialisation. Idempotent. Loads persisted index or creates fresh. */
   async initialise(maxElements = 100_000) {
     if (this._isReady) return;
 
     try {
-      const indexExists = await this._fileExists(INDEX_PATH);
+      const embeddingService = require("./embeddingService");
+      this._aiContext = embeddingService.getContext();
+      this._indexPath = this._aiContext.paths.index;
+      this._metadataPath = this._aiContext.paths.metadata;
+      this._embeddingDim = this._aiContext.dimension;
+
+      const indexExists = await this._fileExists(this._indexPath);
       indexExists
         ? await this.loadIndex()
         : await this._createAndActivate(maxElements);
 
       logger.info(
-        `IndexService initialized | space: ${HNSW_SPACE} | dim: ${EMBEDDING_DIM}` +
+        `IndexService initialized | space: ${HNSW_SPACE} | dim: ${this._embeddingDim}` +
         ` | vectors: ${this._index.getCurrentCount()}`
       );
     } catch (error) {
@@ -146,7 +106,7 @@ class IndexService {
    */
   async createIndex(maxElements = 100_000) {
     try {
-      this._index = new HierarchicalNSW(HNSW_SPACE, EMBEDDING_DIM);
+      this._index = new HierarchicalNSW(HNSW_SPACE, this._embeddingDim);
       // initIndex(maxElements, M, efConstruction, randomSeed)
       this._index.initIndex(maxElements, HNSW_M, HNSW_EF_CONSTRUCTION, 100);
       this._resetMappingState();
@@ -164,14 +124,33 @@ class IndexService {
    * @throws {AppError}
    */
   async loadIndex() {
-    if (!(await this._fileExists(INDEX_PATH))) return;
+    if (!(await this._fileExists(this._indexPath)) || !(await this._fileExists(this._metadataPath))) {
+      return;
+    }
 
     try {
-      this._index = new HierarchicalNSW(HNSW_SPACE, EMBEDDING_DIM);
-      // readIndex(path, allowReplaceDeleted) — second arg is a boolean, not capacity.
-      await this._index.readIndex(INDEX_PATH, false);
+      const metaJson = await fs.readFile(this._metadataPath, "utf8");
+      const payload = JSON.parse(metaJson);
+      const storedContext = payload.context;
 
-      await this._restoreLabelMaps();
+      if (!storedContext || 
+          storedContext.id !== this._aiContext.id || 
+          storedContext.version !== this._aiContext.version || 
+          storedContext.dimension !== this._aiContext.dimension ||
+          storedContext.preprocessing.version !== this._aiContext.preprocessing.version) {
+          
+          throw new AppError(
+              `Index metadata mismatch! Active context (${this._aiContext.id} v${this._aiContext.version}) ` +
+              `is incompatible with stored index. Please rebuild the index.`,
+              500
+          );
+      }
+
+      this._index = new HierarchicalNSW(HNSW_SPACE, this._embeddingDim);
+      // readIndex(path, allowReplaceDeleted) — second arg is a boolean, not capacity.
+      await this._index.readIndex(this._indexPath, false);
+
+      await this._restoreLabelMaps(payload);
       this._activateIndex();
 
       logger.info(
@@ -182,19 +161,13 @@ class IndexService {
     }
   }
 
-  /**
-   * Persists the live HNSW binary and label map to disk atomically.
-   * Safe to call after every addVector() or on a scheduled interval.
-   *
-   * @returns {Promise<void>}
-   * @throws {AppError} 503 if not ready, 500 on I/O failure.
-   */
+  /** Persists the live HNSW binary and label map to disk. */
   async saveIndex() {
     this._assertReady("saveIndex");
 
     try {
-      await fs.mkdir(path.dirname(INDEX_PATH), { recursive: true });
-      await this._index.writeIndex(INDEX_PATH);
+      await fs.mkdir(path.dirname(this._indexPath), { recursive: true });
+      await this._index.writeIndex(this._indexPath);
       await this._writeLabelMap();
 
       logger.info(
@@ -205,60 +178,40 @@ class IndexService {
     }
   }
 
-  /**
-   * Alias for saveIndex() — preserved for API compatibility.
-   * @returns {Promise<void>}
-   */
+  /** Alias for saveIndex() */
   async persist() {
     return this.saveIndex();
   }
 
-  /**
-   * Resets and clears the HNSW vector index completely.
-   * @param {number} [maxElements=100000]
-   * @returns {Promise<void>}
-   */
+  /** Resets and clears the HNSW vector index completely. */
   async clear(maxElements = 100_000) {
     this._assertReady("clear");
     await this._createAndActivate(maxElements);
     await this.saveIndex();
     logger.info("IndexService.clear(): HNSW vector index completely cleared and persisted.");
   }
+  /** Inserts multiple embeddings (views) for a single image into the live HNSW index. */
+  async addVectors(imageId, embeddings) {
+    this._assertReady("addVectors");
+    this._validateImageId(imageId, "addVectors");
+    if (!Array.isArray(embeddings) || embeddings.length === 0) {
+      throw new AppError("addVectors(): embeddings must be a non-empty array", 400);
+    }
+    this._rejectDuplicate(imageId, "addVectors");
 
-  // -------------------------------------------------------------------------
-  // Vector management — public
-  // -------------------------------------------------------------------------
+    this._ensureCapacity(embeddings.length, "addVectors");
 
-  /**
-   * Inserts a single L2-normalised embedding into the live HNSW index.
-   *
-   * @param {string}       imageId
-   * @param {Float32Array} embedding
-   * @returns {Promise<void>}
-   * @throws {AppError} 503 not ready | 409 duplicate | 400 invalid args
-   */
-  async addVector(imageId, embedding) {
-    this._assertReady("addVector");
-    this._validateImageId(imageId, "addVector");
-    this._validateEmbedding(embedding, "addVector");
-    this._rejectDuplicate(imageId, "addVector");
+    let viewNumber = 1;
+    for (const embedding of embeddings) {
+      this._validateEmbedding(embedding, "addVectors");
+      this._insertPoint(imageId, embedding, viewNumber, embeddings.length);
+      viewNumber++;
+    }
 
-    this._ensureCapacity(1, "addVector");
-    this._insertPoint(imageId, embedding);
-
-    // Persist after every single insert so no vectors are lost on an unexpected crash.
+    // Persist after every insert so no vectors are lost on an unexpected crash.
     await this.saveIndex();
   }
 
-  /**
-   * Inserts multiple embeddings in a single pass.
-   * Duplicate imageIds within the batch are skipped with a warning rather than
-   * aborting the entire batch.
-   *
-   * @param {Array<{ imageId: string, embedding: Float32Array }>} items
-   * @returns {Promise<void>}
-   * @throws {AppError} 503 not ready | 400 invalid args
-   */
   async addVectorBatch(items) {
     this._assertReady("addVectorBatch");
 
@@ -269,21 +222,29 @@ class IndexService {
       );
     }
 
-    this._ensureCapacity(items.length, "addVectorBatch");
+    // Calculate total embeddings
+    const totalEmbeddings = items.reduce((sum, item) => sum + (Array.isArray(item.embeddings) ? item.embeddings.length : 1), 0);
+    this._ensureCapacity(totalEmbeddings, "addVectorBatch");
 
-    for (const { imageId, embedding } of items) {
+    for (const item of items) {
+      const imageId = item.imageId;
+      const embeddings = Array.isArray(item.embeddings) ? item.embeddings : [item.embedding];
+      
       this._validateImageId(imageId, "addVectorBatch");
-      this._validateEmbedding(embedding, "addVectorBatch");
 
       if (this._imageIdToLabel.has(imageId)) {
         logger.warn(`IndexService.addVectorBatch(): skipping duplicate "${imageId}"`);
         continue;
       }
 
-      this._insertPoint(imageId, embedding);
+      let viewNumber = 1;
+      for (const embedding of embeddings) {
+        this._validateEmbedding(embedding, "addVectorBatch");
+        this._insertPoint(imageId, embedding, viewNumber, embeddings.length);
+        viewNumber++;
+      }
     }
 
-    // One persist call for the entire batch — cheaper than per-item saves.
     await this.saveIndex();
   }
 
@@ -300,19 +261,18 @@ class IndexService {
   async removeVector(imageId) {
     this._assertReady("removeVector");
 
-    const label = this._imageIdToLabel.get(imageId);
-    if (label === undefined) return false;
-
+    const labels = this._imageIdToLabel.get(imageId);
+    if (!labels || labels.size === 0) return false;
 
     // Soft deletion:
-    // The vector remains physically inside the HNSW graph.
-    // markDelete() only excludes it from future searches.
-    // Rebuild() is required to reclaim space.
-    // markDelete() is a soft delete — the point is excluded from future kNN
-    // results immediately but the slot is not reclaimed until rebuild().
-    this._index.markDelete(label);
+    // The vectors remain physically inside the HNSW graph.
+    // markDelete() only excludes them from future searches.
+    for (const label of labels) {
+      this._index.markDelete(label);
+      this._labelToImageId.delete(label);
+    }
+    
     this._imageIdToLabel.delete(imageId);
-    this._labelToImageId.delete(label);
 
     // Persist so the updated label map (which no longer lists this imageId)
     // is durable across restarts. Without this the deletion reverses on reboot.
@@ -320,11 +280,6 @@ class IndexService {
 
     return true;
   }
-
-  // -------------------------------------------------------------------------
-  // Query — public
-  // -------------------------------------------------------------------------
-
   /**
    * Performs a k-nearest-neighbour search and returns results sorted by
    * ascending cosine distance (most similar first).
@@ -350,17 +305,16 @@ class IndexService {
     );
 
     return neighbors
-      .map((label, i) => ({
-        imageId:  this._labelToImageId.get(label),
-        distance: distances[i],
-      }))
+      .map((label, i) => {
+        const meta = this._labelToImageId.get(label);
+        const imageId = typeof meta === 'string' ? meta : meta?.imageId;
+        return {
+          imageId: imageId,
+          distance: distances[i],
+        };
+      })
       .filter(({ imageId }) => imageId !== undefined);
   }
-
-  // -------------------------------------------------------------------------
-  // Rebuild — public
-  // -------------------------------------------------------------------------
-
   /**
    * Rebuilds the entire HNSW index from scratch by scanning the design library,
    * generating embeddings via EmbeddingService, and persisting the result.
@@ -390,25 +344,15 @@ class IndexService {
 
     return stats;
   }
-
-  // -------------------------------------------------------------------------
-  // Accessors
-  // -------------------------------------------------------------------------
-
-  /** @returns {boolean} */
+  
   get isReady() {
     return this._isReady;
   }
 
-  /** @returns {number} Count of active (non-deleted) vectors. */
+  
   get vectorCount() {
     return this._index ? this._index.getCurrentCount() : 0;
   }
-
-  // -------------------------------------------------------------------------
-  // Private — index state helpers
-  // -------------------------------------------------------------------------
-
   /**
    * Activates the index for querying: sets the runtime efSearch beam width
    * and flips _isReady to true.
@@ -439,33 +383,21 @@ class IndexService {
     this._activateIndex();
     logger.info("IndexService: no persisted index found — created fresh HNSW index.");
   }
-
-  // -------------------------------------------------------------------------
-  // Private — persistence helpers
-  // -------------------------------------------------------------------------
-
-  /**
-   * Reads the companion JSON file and restores both bidirectional label maps.
-   * Emits a warning if the labels file is missing (binary-only recovery).
-   */
-  async _restoreLabelMaps() {
-    if (!(await this._fileExists(LABELS_PATH))) {
-      logger.warn(
-        "IndexService.loadIndex(): labels file missing — imageId lookups " +
-        "unavailable until rebuild() is run."
-      );
-      this._resetMappingState();
-      this._nextLabel = this._index.getCurrentCount();
-      return;
+  async _restoreLabelMaps(payload) {
+    this._labelToImageId = new Map(
+      Object.entries(payload.labelToImageId).map(([k, v]) => [Number(k), v])
+    );
+    
+    this._imageIdToLabel = new Map();
+    for (const [labelStr, meta] of this._labelToImageId.entries()) {
+      const label = Number(labelStr);
+      const id = typeof meta === 'string' ? meta : meta.imageId;
+      if (!this._imageIdToLabel.has(id)) {
+        this._imageIdToLabel.set(id, new Set());
+      }
+      this._imageIdToLabel.get(id).add(label);
     }
-
-    const raw = await fs.readFile(LABELS_PATH, "utf8");
-    const { labelToImageId, nextLabel } = JSON.parse(raw);
-    const entries = Object.entries(labelToImageId);
-
-    this._labelToImageId = new Map(entries.map(([k, v]) => [Number(k), v]));
-    this._imageIdToLabel = new Map(entries.map(([k, v]) => [v, Number(k)]));
-    this._nextLabel      = nextLabel ?? this._labelToImageId.size;
+    this._nextLabel = payload.nextLabel ?? this._labelToImageId.size;
   }
 
   /**
@@ -473,16 +405,12 @@ class IndexService {
    */
   async _writeLabelMap() {
     const payload = {
+      context: this._aiContext,
       labelToImageId: Object.fromEntries(this._labelToImageId),
       nextLabel:      this._nextLabel,
     };
-    await fs.writeFile(LABELS_PATH, JSON.stringify(payload, null, 2), "utf8");
+    await fs.writeFile(this._metadataPath, JSON.stringify(payload, null, 2), "utf8");
   }
-
-  // -------------------------------------------------------------------------
-  // Private — vector insertion helpers
-  // -------------------------------------------------------------------------
-
   /**
    * Low-level point insertion: calls hnswlib addPoint and updates both maps.
    * Callers are responsible for validation and capacity checks before calling this.
@@ -490,11 +418,15 @@ class IndexService {
    * @param {string}       imageId
    * @param {Float32Array} embedding
    */
-  _insertPoint(imageId, embedding) {
+  _insertPoint(imageId, embedding, viewNumber = 1, totalViews = 1) {
     const label = this._nextLabel++;
     this._index.addPoint(Array.from(embedding), label);
-    this._labelToImageId.set(label, imageId);
-    this._imageIdToLabel.set(imageId, label);
+    this._labelToImageId.set(label, { imageId, viewNumber, totalViews });
+    
+    if (!this._imageIdToLabel.has(imageId)) {
+      this._imageIdToLabel.set(imageId, new Set());
+    }
+    this._imageIdToLabel.get(imageId).add(label);
   }
 
   /**
@@ -516,11 +448,6 @@ class IndexService {
       this._index.resizeIndex(newMax);
     }
   }
-
-  // -------------------------------------------------------------------------
-  // Private — rebuild helpers
-  // -------------------------------------------------------------------------
-
   /**
    * Lazy-requires EmbeddingService to avoid a circular dependency at module load.
    * Throws 503 when EmbeddingService has not been initialised yet.
@@ -581,51 +508,43 @@ class IndexService {
     return imageFiles;
   }
 
-  /**
-   * Iterates over image filenames, embeds each one, and inserts it into the
-   * current (fresh) index. Corrupted / unsupported files are skipped; unexpected
-   * errors are counted as failures but do NOT abort the loop.
-   *
-   * @param {string[]} filenames
-   * @param {object}   embeddingService
-   * @returns {Promise<{ processed: number, skipped: number, failed: number }>}
-   */
+  /** Iterates over image filenames, embeds each one, and inserts into index. */
   async _embedAllImages(filenames, embeddingService) {
     let processed = 0;
     let skipped   = 0;
     let failed    = 0;
 
+    const multiViewService = require("./multiViewService");
+
     for (const filename of filenames) {
       try {
         const imageId     = path.basename(filename, path.extname(filename));
-        const imageBuffer = await fs.readFile(path.join(DESIGN_LIBRARY_PATH, filename));
-        const embedding   = await embeddingService.embed(imageBuffer);
+        const fullPath    = path.join(DESIGN_LIBRARY_PATH, filename);
+        const imageBuffer = await fs.readFile(fullPath);
 
-        this._insertPoint(imageId, embedding);
+        logger.info(`Import: Processing ${imageId}...`);
+        const cropBuffers = await multiViewService.extractViews(imageBuffer);
+        logger.info(`Detected ${cropBuffers.length} jewellery views.`);
+        
+        let viewCount = 1;
+        for (const cropBuf of cropBuffers) {
+           const embedding = await embeddingService.embed(cropBuf);
+           this._ensureCapacity(1, "rebuild._embedAllImages");
+           this._insertPoint(imageId, embedding, viewCount, cropBuffers.length);
+           viewCount++;
+        }
+        logger.info(`Generated ${cropBuffers.length} embeddings.`);
+
         processed++;
       } catch (error) {
-        // 400 = unreadable / unsupported image — skip silently.
-        if (error instanceof AppError && error.statusCode === 400) {
-          logger.warn(`IndexService.rebuild(): skipped "${filename}" — ${error.message}`);
-          skipped++;
-        } else {
-          logger.error(`IndexService.rebuild(): failed "${filename}" — ${error.message}`);
-          failed++;
-        }
+        logger.error(`IndexService.rebuild(): failed "${filename}" — ${error.message}`);
+        failed++;
       }
     }
 
     return { processed, skipped, failed };
   }
-
-  // -------------------------------------------------------------------------
-  // Private — guard / validation helpers
-  // -------------------------------------------------------------------------
-
-  /**
-   * Throws 503 if the index has not been initialised.
-   * @param {string} callerName
-   */
+  /** Throws 503 if the index has not been initialised. */
   _assertReady(callerName) {
     if (!this._isReady) {
       throw new AppError(
@@ -636,11 +555,7 @@ class IndexService {
     }
   }
 
-  /**
-   * Throws 409 if the imageId is already registered in the index.
-   * @param {string} imageId
-   * @param {string} callerName
-   */
+  /** Throws 409 if the imageId is already registered in the index. */
   _rejectDuplicate(imageId, callerName) {
     if (this._imageIdToLabel.has(imageId)) {
       throw new AppError(
@@ -651,11 +566,7 @@ class IndexService {
     }
   }
 
-  /**
-   * Throws 400 if imageId is not a non-empty string.
-   * @param {string} imageId
-   * @param {string} callerName
-   */
+  /** Throws 400 if imageId is not a non-empty string. */
   _validateImageId(imageId, callerName) {
     if (typeof imageId !== "string" || imageId.trim() === "") {
       throw new AppError(
@@ -665,11 +576,7 @@ class IndexService {
     }
   }
 
-  /**
-   * Throws 400 if embedding is not a Float32Array of exactly EMBEDDING_DIM elements.
-   * @param {Float32Array} embedding
-   * @param {string}       callerName
-   */
+  /** Throws 400 if embedding is not a valid Float32Array. */
   _validateEmbedding(embedding, callerName) {
     if (!(embedding instanceof Float32Array)) {
       throw new AppError(
@@ -677,21 +584,16 @@ class IndexService {
         400
       );
     }
-    if (embedding.length !== EMBEDDING_DIM) {
+    if (embedding.length !== this._embeddingDim) {
       throw new AppError(
         `${callerName}(): embedding dimension mismatch — ` +
-        `got ${embedding.length}, expected ${EMBEDDING_DIM}.`,
+        `got ${embedding.length}, expected ${this._embeddingDim}.`,
         400
       );
     }
   }
 
-  /**
-   * Throws 400 when k is not a positive integer.
-   * hnswlib-node produces undefined behaviour for k ≤ 0 or non-integer k.
-   *
-   * @param {number} k
-   */
+  /** Throws 400 when k is not a positive integer. */
   _validateK(k) {
     if (!Number.isInteger(k) || k < 1) {
       throw new AppError(
@@ -700,28 +602,12 @@ class IndexService {
       );
     }
   }
-
-  // -------------------------------------------------------------------------
-  // Private — utility helpers
-  // -------------------------------------------------------------------------
-
-  /**
-   * Returns true when filePath is accessible on disk, false otherwise.
-   * @param {string} filePath
-   * @returns {Promise<boolean>}
-   */
+  /** Returns true when filePath is accessible on disk. */
   async _fileExists(filePath) {
     return fs.access(filePath).then(() => true).catch(() => false);
   }
 
-  /**
-   * Re-throws AppErrors untouched; wraps all other errors as AppError(statusCode).
-   *
-   * @param {string} callerName
-   * @param {Error}  error
-   * @param {number} statusCode
-   * @returns {AppError}
-   */
+  /** Re-throws AppErrors untouched; wraps all other errors as AppError(statusCode). */
   _wrapError(callerName, error, statusCode) {
     if (error instanceof AppError) return error;
     return new AppError(
@@ -730,17 +616,7 @@ class IndexService {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Singleton export
-// ---------------------------------------------------------------------------
-
-/**
- * Application-wide singleton.
- * Await indexService.initialise() once at server boot.
- *
- * @type {IndexService}
- */
+/** Application-wide singleton instance. */
 const indexService = new IndexService();
 
 module.exports = indexService;

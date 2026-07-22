@@ -1,7 +1,6 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Upload } from 'lucide-react';
 
-
 import { Sidebar, TopBar } from '../design-system/components/Navigation';
 import { Button } from '../design-system/components/Button';
 

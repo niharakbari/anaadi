@@ -6,10 +6,10 @@ import { MoreHorizontal, TrendingUp, TrendingDown, ExternalLink, Trash2 } from '
 export function Card({ children, className, hover = false, padding = 'md', onClick, ...props }) {
   const paddingClasses = {
     none: '',
-    sm:  'p-3',
-    md:  'p-5',
-    lg:  'p-6',
-    xl:  'p-8',
+    sm: 'p-3',
+    md: 'p-5',
+    lg: 'p-6',
+    xl: 'p-8',
   };
 
   return (
@@ -103,9 +103,9 @@ export function ImageCard({
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-stone-300">
-              <rect x="4" y="4" width="32" height="32" rx="4" stroke="currentColor" strokeWidth="1.5"/>
-              <circle cx="14" cy="14" r="3" stroke="currentColor" strokeWidth="1.5"/>
-              <path d="M4 26L12 18L18 24L26 14L36 26" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <rect x="4" y="4" width="32" height="32" rx="4" stroke="currentColor" strokeWidth="1.5" />
+              <circle cx="14" cy="14" r="3" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M4 26L12 18L18 24L26 14L36 26" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
         )}
@@ -127,7 +127,7 @@ export function ImageCard({
               className="w-7 h-7 rounded-md bg-white/90 backdrop-blur-sm border border-stone-200 flex items-center justify-center shadow-sm hover:bg-stone-50 hover:text-accent transition-colors duration-100"
               title="Save Search"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-stone-600 hover:text-accent"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-stone-600 hover:text-accent"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
             </button>
           )}
           {onViewDetails && (
@@ -162,8 +162,8 @@ export function ImageCard({
             <span
               className={cn(
                 'shrink-0 inline-flex h-5 px-1.5 items-center rounded-full text-[10px] font-medium',
-                status === 'active'   && 'bg-success-subtle text-success',
-                status === 'pending'  && 'bg-warning-subtle text-warning',
+                status === 'active' && 'bg-success-subtle text-success',
+                status === 'pending' && 'bg-warning-subtle text-warning',
                 status === 'archived' && 'bg-stone-100 text-stone-500',
               )}
             >
