@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Gem, Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { Card } from '../../design-system/components/Cards';
 import { FormField, Input } from '../../design-system/components/FormControls';
 import { Button } from '../../design-system/components/Button';
@@ -37,7 +37,7 @@ export default function LoginPage() {
   const handleSignIn = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     // Basic credentials validation
     if (!email.trim() || !password.trim()) {
       setError('Please fill in all credentials.');
@@ -80,20 +80,17 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-screen bg-stone-50 flex flex-col items-center justify-center p-6 font-sans">
       <div className="w-full max-w-md space-y-6 animate-fade-in">
-        
+
         {/* App Logo & Title */}
-        <div className="flex flex-col items-center text-center space-y-2.5">
-          <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-sm">
-            <Gem size={20} className="text-white" />
-          </div>
+        <div className="flex flex-col items-center text-center space-y-2 mb-4">
           <div>
-            <h1 className="text-xl font-bold text-stone-900 tracking-tight leading-none">
+            <h1 className="font-serif text-4xl font-semibold text-stone-900 tracking-wide leading-none">
               Anaadi
             </h1>
-            <p className="text-[11px] text-stone-400 font-semibold uppercase tracking-wider mt-1.5">
-              Jewellery AI Search
+            <p className="text-[10px] text-stone-400 font-medium uppercase tracking-[0.2em] mt-3">
+              Jewellery AI
             </p>
-            <Body className="text-stone-500 text-xs mt-1">
+            <Body className="text-stone-400/80 text-xs mt-2">
               Internal Enterprise Authentication Portal
             </Body>
           </div>

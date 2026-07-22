@@ -18,8 +18,7 @@ uploads/
 # AI vector index and companion maps
 indexes/
 
-# AI model assets (ONNX weights and tokenizers)
-ai-models/
+
 
 # Editor/IDE configurations
 .vscode/

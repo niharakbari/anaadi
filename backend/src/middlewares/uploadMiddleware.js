@@ -8,7 +8,7 @@ const config = require("../config/config");
 
 const MAX_FILES_PER_UPLOAD = Number.isFinite(config.upload.maxFiles) && config.upload.maxFiles > 0
   ? config.upload.maxFiles
-  : 100;
+  : Infinity;
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
@@ -32,13 +32,24 @@ function fileFilter(req, file, cb) {
     "image/jpeg",
     "image/png",
     "image/webp",
+    "image/bmp",
+    "image/tiff",
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/x-zip"
   ];
 
   if (allowedMimeTypes.includes(file.mimetype)) {
     return cb(null, true);
   }
 
-  cb(new AppError("Only JPEG, PNG and WEBP images are allowed", 400));
+  // Also check extension as a fallback just in case some browsers don't send standard zip mime type
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (ext === '.zip' && !file.mimetype.startsWith('image/')) {
+     return cb(null, true);
+  }
+
+  cb(new AppError("Only JPEG, PNG, WEBP images and ZIP archives are allowed", 400));
 }
 
 const upload = multer({

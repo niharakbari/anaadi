@@ -3,8 +3,12 @@ require("dotenv").config();
 module.exports = {
     port: process.env.PORT,
     clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+    ai: {
+        model: process.env.AI_MODEL
+    },
 
     database: {
+        // port: process.env.DB_PORT,
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,

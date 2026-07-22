@@ -2,24 +2,7 @@
 
 /**
  * @fileoverview SearchService
- *
- * Pure orchestrator for AI-powered jewellery image search.
- * This is the ONLY AI service that Express route handlers call directly.
- *
- * This class owns zero AI logic. It delegates:
- *   - Embedding generation  → EmbeddingService
- *   - Vector similarity     → IndexService
- *
- * Request flow:
- *
- *   HTTP Route
- *     ↓
- *   SearchService.searchByImage(imageBuffer, options)
- *     ├─ EmbeddingService.embed()     → Float32Array[512]
- *     ├─ IndexService.searchKnn()     → [{ imageId, distance }]
- *     └─ _buildResults()             → SearchResult[]
- *
- * @module services/ai/searchService
+ * Pure orchestrator for AI-powered visual search. Delegates embeddings to EmbeddingService and queries IndexService.
  */
 
 const logger   = require("../../utils/logger");
@@ -27,72 +10,64 @@ const AppError = require("../../utils/AppError");
 
 const embeddingService = require("./embeddingService");
 const indexService     = require("./indexService");
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
+const scoreFormatter   = require("./scoreFormatter");
+const multiViewService = require("./multiViewService");
 
 /** Default number of nearest neighbours returned per search. */
 const DEFAULT_K = 10;
 
 /** Hard cap on k — prevents runaway query costs. */
 const MAX_K = 100;
-
-/**
- * Default maximum cosine distance for a result to be included.
- * Cosine distance: 0 = identical, 2 = maximally dissimilar.
- *
- * TODO: Expose via env variable AI_SIMILARITY_THRESHOLD for runtime tuning.
- */
-const DEFAULT_DISTANCE_THRESHOLD = 0.5;
-
-// ---------------------------------------------------------------------------
-// SearchService
-// ---------------------------------------------------------------------------
-
 class SearchService {
-  // -------------------------------------------------------------------------
-  // Search entry points
-  // -------------------------------------------------------------------------
-
-  /**
-   * Primary entry point for image-based similarity search.
-   * Embeds the query image and queries the HNSW index.
-   *
-   * @param {Buffer} imageBuffer                       Raw query image (JPEG / PNG / WebP).
-   * @param {object} [options={}]
-   * @param {number} [options.k]                       Result count. Default: 10. Max: 100.
-   * @param {number} [options.distanceThreshold]       Max cosine distance. Default: 0.5.
-   * @param {boolean} [options.includeDistance=false]  Expose raw distance in results.
-   * @returns {Promise<SearchResult[]>}
-   * @throws {AppError} 400 – invalid imageBuffer.
-   * @throws {AppError} 503 – a required service is not initialised.
-   */
+  /** Primary entry point for visual search. */
   async searchByImage(imageBuffer, options = {}) {
     this._validateImageBuffer(imageBuffer);
     this._assertServicesReady();
 
     const k         = this._resolveK(options.k);
-    const threshold = options.distanceThreshold ?? DEFAULT_DISTANCE_THRESHOLD;
 
-    const embedding  = await embeddingService.embed(imageBuffer);
-    const knnResults = await indexService.searchKnn(embedding, k);
-    const filtered   = knnResults.filter((r) => r.distance <= threshold);
+    const aiContext = embeddingService.getContext();
+    const threshold = options.distanceThreshold ?? aiContext.search.threshold;
 
-    return await this._buildResults(filtered, options);
+    // 1. Pass uploaded image through multiViewService
+    const extractedViews = await multiViewService.extractViews(imageBuffer);
+    
+    // 2. If NO multiple views detected, use original image exactly as today
+    const buffersToSearch = extractedViews.length > 1 ? extractedViews : [imageBuffer];
+
+    // Fetch extra to account for multi-view merging
+    const fetchK = Math.max(k * 5, 50);
+    
+    // 3. Embed and search EVERY crop
+    const allRawResults = [];
+    for (const viewBuffer of buffersToSearch) {
+      const embedding = await embeddingService.embed(viewBuffer);
+      const rawResults = await indexService.searchKnn(embedding, fetchK);
+      allRawResults.push(...rawResults);
+    }
+    
+    // 4. Merge by design keeping best score (minimum distance)
+    const mergedMap = new Map();
+    for (const result of allRawResults) {
+      if (result.distance > threshold) continue;
+      
+      const existing = mergedMap.get(result.imageId);
+      if (!existing || result.distance < existing.distance) {
+        mergedMap.set(result.imageId, result);
+      }
+    }
+    
+    // Sort merged results and slice to k
+    const mergedResults = Array.from(mergedMap.values())
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, k);
+
+    logger.info(`Search: Requested Top ${k}. Retrieved ${allRawResults.length} vectors. Merged into ${mergedMap.size} unique designs. Returned Top ${mergedResults.length}.`);
+
+    return await this._buildResults(mergedResults, options);
   }
 
-  /**
-   * "Find similar" search using the stored embedding of an existing image.
-   *
-   * NOT IMPLEMENTED — the current architecture does not persist raw embeddings
-   * in a separately queryable storage layer. The HNSW index stores only the
-   * search graph and label mapping, not the original embedding vectors. 
-   * @param {string} imageId
-   * @param {object} [options={}]
-   * @returns {Promise<SearchResult[]>}
-   * @throws {AppError} 501 always.
-   */
+  /** Not implemented: raw embeddings are not persisted outside the HNSW graph. */
   async searchByImageId(imageId, options = {}) {
     // TODO: Implement once embedding retrieval from persistent storage is available.
     throw new AppError(
@@ -127,40 +102,25 @@ class SearchService {
     );
   }
 
-  // -------------------------------------------------------------------------
-  // Index management
-  // -------------------------------------------------------------------------
-
-  /**
-   * Registers a newly uploaded image in the HNSW index.
-   * Call this after the image row has been committed to the database
-   * so that the imageId (DB primary key) is available.
-   *
-   * @param {string} imageId     DB-assigned identifier for the image.
-   * @param {Buffer} imageBuffer Raw image buffer.
-   * @returns {Promise<void>}
-   * @throws {AppError} 400 – invalid inputs.
-   * @throws {AppError} 503 – a required service is not initialised.
-   */
+  /** Image must already exist in DB so HNSW metadata can reference its ID. */
   async registerImage(imageId, imageBuffer) {
     this._validateImageId(imageId);
     this._validateImageBuffer(imageBuffer);
     this._assertServicesReady();
 
-    const embedding = await embeddingService.embed(imageBuffer);
-    await indexService.addVector(imageId, embedding);
+    const cropBuffers = await multiViewService.extractViews(imageBuffer);
 
-    logger.info(`SearchService.registerImage(): indexed imageId=${imageId}`);
+    const embeddings = [];
+    for (const cropBuffer of cropBuffers) {
+      embeddings.push(await embeddingService.embed(cropBuffer));
+    }
+
+    await indexService.addVectors(imageId, embeddings);
+
+    logger.info(`SearchService.registerImage(): indexed imageId=${imageId} with ${embeddings.length} views`);
   }
 
-  /**
-   * Removes an image from the HNSW index.
-   * Call this when the image is deleted from the database.
-   *
-   * @param {string} imageId
-   * @returns {Promise<boolean>} true if the image was found and removed, false if not found.
-   * @throws {AppError} 503 – IndexService is not initialised.
-   */
+  /** Removes image from HNSW index (soft delete). */
   async removeImage(imageId) {
     this._validateImageId(imageId);
 
@@ -175,31 +135,13 @@ class SearchService {
     return removed;
   }
 
-  /**
-   * Resets and clears all vectors from the HNSW search index.
-   * @returns {Promise<void>}
-   */
+  /** Resets and clears all vectors from the HNSW search index. */
   async clearAll() {
     await indexService.clear();
     logger.info("SearchService.clearAll(): Cleared all vectors from HNSW index.");
   }
-
-  // -------------------------------------------------------------------------
-  // Private helpers
-  // -------------------------------------------------------------------------
-
-  /**
-   * Transforms raw kNN results into the public SearchResult shape.
-   * Computes similarity score and optionally exposes the raw distance.
-   *
-   * TODO: MySQL — once the DB layer is wired, join the designImages table
-   * here to attach filename, thumbnailUrl, category, etc. to each result.
-   *
-   * @param {Array<{ imageId: string, distance: number }>} knnResults
-   * @param {object} options
-   * @param {boolean} [options.includeDistance=false]
-   * @returns {SearchResult[]}
-   */
+  
+  /** Transforms raw kNN results into the public SearchResult shape. */
   async _buildResults(knnResults, options) {
     if (knnResults.length === 0) return [];
 
@@ -223,7 +165,7 @@ class SearchService {
     }
 
     // Map and merge metadata into results
-    return knnResults.map(({ imageId, distance }) => {
+    return knnResults.map(({ imageId, distance }, index) => {
       const dbMetadata = metadataMap.get(String(imageId)) || {};
 
       // Derive title from original_filename (e.g. "ring_design.png" -> "ring_design")
@@ -239,7 +181,12 @@ class SearchService {
 
       const result = {
         imageId,
-        similarityScore: parseFloat(((1 - distance) * 100).toFixed(2)),
+        // UI metrics - delegated to the formatter
+        rank: index + 1,
+        distance: distance,
+        similarity: scoreFormatter.formatScore(distance, embeddingService.getContext()),
+        displayScore: scoreFormatter.formatDisplayScore(distance, embeddingService.getContext()),
+        
         // Expose database columns
         originalFilename: dbMetadata.original_filename || null,
         storedFilename: dbMetadata.stored_filename || null,
@@ -259,7 +206,7 @@ class SearchService {
       };
 
       if (options.includeDistance === true) {
-        result.distance = distance;
+        result.distance = distance; // Retained for backward compatibility if explicitly requested
       }
 
       return result;
@@ -333,10 +280,6 @@ class SearchService {
   }
 }
 
-// ---------------------------------------------------------------------------
-// JSDoc type definitions
-// ---------------------------------------------------------------------------
-
 /**
  * @typedef  {object} SearchResult
  * @property {string} imageId          Application-level image identifier.
@@ -349,9 +292,6 @@ class SearchService {
  * @property {string} [category]
  */
 
-// ---------------------------------------------------------------------------
-// Singleton export
-// ---------------------------------------------------------------------------
 /**
  * 
  * Application-wide singleton.

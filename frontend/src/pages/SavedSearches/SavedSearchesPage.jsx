@@ -134,8 +134,7 @@ export default function SavedSearchesPage() {
       
       addToast('success', 'Updated', 'Saved search updated successfully.');
       setDetailsOpen(false);
-      
-      // Update local state
+
       setSearches(prev => prev.map(s => s.id === selectedSearch.id ? { ...s, name: editName.trim(), dealerName: editDealer.trim(), notes: editNotes.trim() } : s));
       setSelectedSearch(prev => ({ ...prev, name: editName.trim(), dealerName: editDealer.trim(), notes: editNotes.trim() }));
     } catch (err) {

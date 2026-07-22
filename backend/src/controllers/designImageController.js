@@ -7,13 +7,34 @@ const logger = require("../utils/logger");
 
 async function importImages(req, res, next) {
   try {
-    const result = await imageImportService.importImages(req.files);
+    // Set headers for streaming NDJSON
+    res.setHeader('Content-Type', 'application/x-ndjson');
+    res.setHeader('Transfer-Encoding', 'chunked');
+    
+    // First chunk to indicate stream started
+    res.write(JSON.stringify({ type: 'start' }) + '\n');
+
+    const onProgress = (progress) => {
+      res.write(JSON.stringify({ type: 'progress', data: progress }) + '\n');
+    };
+
+    const abortController = new AbortController();
+    req.on('close', () => {
+      abortController.abort();
+    });
+
+    const result = await imageImportService.importImages(req.files, onProgress, abortController.signal);
     const statusCode = result.failedImports > 0 ? 207 : 201;
 
-    return res.status(statusCode).json(result);
-
+    res.write(JSON.stringify({ type: 'result', status: statusCode, data: result }) + '\n');
+    res.end();
   } catch (error) {
-    next(error);
+    if (res.headersSent) {
+      res.write(JSON.stringify({ type: 'error', message: error.message }) + '\n');
+      res.end();
+    } else {
+      next(error);
+    }
   }
 }
 

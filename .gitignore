@@ -32,8 +32,10 @@ ai-service-python/temp/
 ai-service-python/uploads/
 indexes/
 backend/indexes/
-ai-models/
-backend/ai-models/
+
+backend/ai-models/openclip/visual.onnx
+backend/ai-models/dinov2/visual.onnx
+backend/ai-models/siglip/visual.onnx
 
 # Uploads and logs (project-wide)
 uploads/
@@ -63,3 +65,5 @@ REF (extract.me)/
 
 
 backend/experiments/
+
+imaginary.sql

@@ -28,11 +28,9 @@ app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 // importing database
 const database = require("./config/database")
 
-
 // Routes
 app.use("/api", routes);
 
 app.use(errorHandler);
-
 
 module.exports = app;

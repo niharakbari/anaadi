@@ -14,6 +14,7 @@ import NotFoundPage from './pages/NotFound/NotFoundPage';
 
 import { AISearchProvider } from './context/AISearchContext';
 import { AuthProvider } from './context/AuthContext';
+import { UploadProvider } from './context/UploadContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
@@ -26,7 +27,13 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
 
             {/* Main Application Interface (Wrapped in Sidebar/Topbar Shell Layout) */}
-            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route path="/" element={
+              <ProtectedRoute>
+                <UploadProvider>
+                  <Layout />
+                </UploadProvider>
+              </ProtectedRoute>
+            }>
             <Route index element={<Navigate to="/login" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="search" element={<AISearchPage />} />

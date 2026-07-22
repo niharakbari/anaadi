@@ -211,9 +211,22 @@ export default function AISearchPage() {
           {/* Left Column: Drag & Drop Upload and Image Preview */}
           <div className="lg:col-span-5 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-stone-200 pb-6 lg:pb-0 lg:pr-6">
             <div className="space-y-3 h-full flex flex-col justify-between">
-              <Label className="text-stone-500 block font-semibold">Reference Image</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-stone-500 block font-semibold">Reference Image</Label>
+                {hasSearched && (
+                  <Button
+                    variant="outline"
+                    onClick={searchNext}
+                    className="h-7 px-2.5 py-0 text-xs border-accent/40 text-accent hover:bg-accent-subtle flex items-center rounded-md"
+                    title="Clear query image and start a new search"
+                  >
+                    <RotateCcw size={12} className="mr-1.5" />
+                    Search Next
+                  </Button>
+                )}
+              </div>
               {previewUrl ? (
-                <div 
+                <div
                   className="relative flex-1 bg-stone-50 border border-stone-200 rounded-xl overflow-hidden flex flex-col items-center justify-center cursor-pointer hover:shadow-md transition-all group"
                   onClick={() => setQueryPreviewOpen(true)}
                   title="Click to preview"
@@ -303,28 +316,15 @@ export default function AISearchPage() {
                   />
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {hasSearched ? (
-                    <Button
-                      variant="outline"
-                      size="md"
-                      onClick={searchNext}
-                      className="flex-1 sm:flex-initial border-accent/40 text-accent hover:bg-accent-subtle"
-                      title="Clear query image and search results to start a new search"
-                    >
-                      <RotateCcw size={14} className="mr-1.5" />
-                      Search Next
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="md"
-                      onClick={handleClear}
-                      disabled={!searchVal && !uploadedFile}
-                      className="flex-1 sm:flex-initial"
-                    >
-                      Clear
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="md"
+                    onClick={handleClear}
+                    disabled={!searchVal && !uploadedFile}
+                    className="flex-1 sm:flex-initial"
+                  >
+                    Clear
+                  </Button>
                   <Button
                     variant="primary"
                     size="md"

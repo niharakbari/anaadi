@@ -6,10 +6,10 @@ import { cn } from '../../lib/utils';
 // ─── Upload Zone ──────────────────────────────────────────────────────────────
 export function UploadZone({
   onUpload,
-  accept = 'image/*',
-  maxSize = 10, // MB
+  accept = 'image/*,application/zip,.zip',
+  maxSize = 10,
   multiple = false,
-  className,
+  className = '',
 }) {
   const [dragOver, setDragOver] = useState(false);
   const [files, setFiles]       = useState([]);
@@ -44,8 +44,9 @@ export function UploadZone({
   const handleFiles = useCallback((incoming) => {
     setError(null);
     const valid = Array.from(incoming).filter((f) => {
-      if (maxSize && f.size > maxSize * 1024 * 1024) {
-        setError(`File exceeds ${maxSize}MB limit.`);
+      const isZip = f.name.toLowerCase().endsWith('.zip') || f.type.includes('zip');
+      if (!isZip && maxSize && f.size > maxSize * 1024 * 1024) {
+        setError(`Image exceeds ${maxSize}MB limit.`);
         return false;
       }
       return true;
@@ -118,14 +119,14 @@ export function UploadZone({
 
           <div>
             <p className="text-sm font-medium text-stone-700">
-              {dragOver ? 'Drop to upload' : (
+              {dragOver ? 'Drop images or ZIP archive here' : (
                 <>
-                  <span className="text-accent">Click to upload</span> or drag and drop
+                  <span className="text-accent">Click to upload</span> or drag and drop images and ZIPs
                 </>
               )}
             </p>
             <p className="text-xs text-stone-400 mt-1">
-              {accept === 'image/*' ? 'PNG, JPG, WEBP' : accept} · Max {maxSize}MB
+              {accept.includes('zip') ? `Images up to ${maxSize}MB · ZIPs unlimited` : `PNG, JPG, WEBP · Max ${maxSize}MB`}
             </p>
           </div>
         </motion.div>

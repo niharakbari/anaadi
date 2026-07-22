@@ -2,107 +2,45 @@ import { H2, Body } from '../../design-system/components/Typography';
 import { Card } from '../../design-system/components/Cards';
 import { UploadZone } from '../../design-system/components/Upload';
 import { Button } from '../../design-system/components/Button';
-import { useMemo, useState } from 'react';
-import { Alert, ToastContainer } from '../../design-system/components/Feedback';
+import { useState } from 'react';
+import { Alert } from '../../design-system/components/Feedback';
 import { FileText, Cpu, CheckCircle } from 'lucide-react';
+import { useUpload } from '../../context/UploadContext';
 
 export default function UploadPage() {
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [uploadResult, setUploadResult] = useState(null);
-  const [uploadError, setUploadError] = useState(null);
   const [uploadKey, setUploadKey] = useState(0);
-  const [toasts, setToasts] = useState([]);
 
-  const apiBaseUrl = useMemo(() => (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200').replace(/\/$/, ''), []);
-
-  const addToast = (type, title, description) => {
-    const id = Math.random().toString(36).slice(2);
-    setToasts((prev) => [...prev, { id, type, title, description }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 6000);
-  };
+  const {
+    isUploading,
+    uploadResult,
+    uploadError,
+    startUpload,
+    uploadProgress,
+    processingState,
+    cancelUpload,
+    selectedCount: globalSelectedCount,
+    processingMetrics,
+  } = useUpload();
 
   const handleUploadChange = (files) => {
     if (files.length > 100) {
-      addToast('warning', 'Upload Limit Exceeded', 'You cannot upload more than 100 images at a time.');
+      alert('You cannot upload more than 100 images at a time.');
       setSelectedFiles(files.slice(0, 100));
       return;
     }
     setSelectedFiles(files);
-    setUploadResult(null);
-    setUploadError(null);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (selectedFiles.length === 0) return;
-
-    if (selectedFiles.length > 100) {
-      addToast('warning', 'Upload Limit Exceeded', 'You cannot upload more than 100 images at a time.');
-      return;
-    }
-
-    setLoading(true);
-    setUploadResult(null);
-    setUploadError(null);
-
-    try {
-      const formData = new FormData();
-
-      selectedFiles.forEach((file) => {
-        formData.append('images', file);
-      });
-
-      const response = await fetch(`${apiBaseUrl}/api/design-images/import`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-
-      if (response.status === 401) {
-        window.dispatchEvent(new Event('unauthorized'));
-        return;
-      }
-
-      const payload = await response.json().catch(() => ({}));
-
-      if (!response.ok && response.status !== 207) {
-        throw new Error(payload.message || 'Bulk import failed.');
-      }
-
-      setUploadResult(payload);
-      if (payload.successfullyImported > 0) {
-        setSelectedFiles([]);
-        setUploadKey((current) => current + 1);
-      }
-
-      if (payload.failedImports > 0) {
-        if (payload.successfullyImported > 0) {
-          addToast(
-            'warning',
-            'Partial Import Complete',
-            `⚠️ ${payload.successfullyImported} images imported successfully, ${payload.failedImports} failed.`
-          );
-        } else {
-          addToast(
-            'error',
-            'Import Failed',
-            `❌ ${payload.failureReasons?.map((f) => `${f.originalFilename || f.filename}: ${f.reason}`).join(' | ') || 'All images failed to import.'}`
-          );
-        }
-      } else {
-        addToast(
-          'success',
-          'Import Successful',
-          `✅ Successfully imported and indexed ${payload.successfullyImported} image${payload.successfullyImported === 1 ? '' : 's'}.`
-        );
-      }
-    } catch (error) {
-      setUploadError(error.message || 'Bulk import failed.');
-      addToast('error', 'Upload Failed', `❌ ${error.message || 'Bulk import failed.'}`);
-    } finally {
-      setLoading(false);
-    }
+    
+    startUpload(selectedFiles);
+    
+    // Clear selection immediately so they can queue another or navigate
+    setSelectedFiles([]);
+    setUploadKey((current) => current + 1);
   };
 
   const selectedCount = selectedFiles.length;
@@ -177,7 +115,7 @@ export default function UploadPage() {
               </Body>
             </div>
             <div className="flex-1 flex flex-col justify-center">
-              <UploadZone key={uploadKey} accept="image/*" maxSize={10} multiple onUpload={handleUploadChange} className="w-full flex-1" />
+              <UploadZone key={uploadKey} accept="image/*,application/zip,.zip" maxSize={10} multiple onUpload={handleUploadChange} className="w-full flex-1" />
             </div>
           </Card>
         </div>
@@ -218,26 +156,64 @@ export default function UploadPage() {
             </div>
 
             <div className="flex flex-col gap-2 pt-6 border-t border-stone-150">
+              {isUploading && uploadProgress !== null && (
+                <div className="space-y-3 pb-4">
+                  <div className="text-sm font-medium text-stone-700">
+                    {uploadProgress < 100 ? 'Uploading files to server...' : 'AI Processing & Indexing...'}
+                  </div>
+                  <div className="text-xs text-stone-500">
+                    {uploadProgress < 100 ? (
+                       `${uploadProgress === 0 ? 0 : Math.min(globalSelectedCount, Math.ceil((uploadProgress / 100) * globalSelectedCount))} / ${globalSelectedCount} files uploaded`
+                    ) : (
+                       processingState 
+                         ? (processingMetrics.phase === 'scanning' ? 'Scanning ZIP and discovering images...' : `${processingMetrics.processed} / ${processingMetrics.total} files processed`) 
+                         : `Extracting & initializing...`
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 bg-stone-200 rounded-full h-2.5 overflow-hidden relative">
+                      <div className="absolute top-0 left-0 bottom-0 bg-stone-300 transition-all duration-300 ease-out" style={{ width: `${uploadProgress}%` }}></div>
+                      <div
+                        className={`absolute top-0 left-0 bottom-0 bg-stone-800 transition-all duration-300 ease-out ${
+                          processingMetrics.phase === 'scanning' ? 'animate-pulse w-full' : ''
+                        }`}
+                        style={{ width: processingMetrics.phase === 'scanning' ? '100%' : `${uploadProgress < 100 ? 0 : processingMetrics.percent}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium text-stone-700 w-9 text-right">
+                       {uploadProgress < 100 ? uploadProgress : (processingMetrics.phase === 'scanning' ? '...' : processingMetrics.percent + '%')}
+                    </span>
+                  </div>
+                </div>
+              )}
               <Button
                 type="submit"
                 variant="primary"
                 className="w-full"
-                disabled={selectedCount === 0}
-                loading={loading}
+                disabled={selectedCount === 0 || isUploading}
+                loading={isUploading}
               >
                 Import {selectedCount > 0 ? `${selectedCount} Image${selectedCount === 1 ? '' : 's'}` : 'Images'}
               </Button>
+              {isUploading && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full !border-red-200 !text-red-600 hover:!bg-red-50 hover:!border-red-300"
+                  onClick={cancelUpload}
+                >
+                  Cancel Upload
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="outline"
                 className="w-full"
                 onClick={() => {
                   setSelectedFiles([]);
-                  setUploadResult(null);
-                  setUploadError(null);
                   setUploadKey((current) => current + 1);
                 }}
-                disabled={selectedCount === 0}
+                disabled={selectedCount === 0 || isUploading}
               >
                 Clear Selection
               </Button>
@@ -245,11 +221,6 @@ export default function UploadPage() {
           </Card>
         </div>
       </form>
-
-      <ToastContainer
-        toasts={toasts}
-        onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
-      />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Search, Upload, Database, Settings,
-  Gem, Clock, Activity, LogOut, Bookmark
+  Clock, Activity, LogOut, Bookmark
 } from 'lucide-react';
 
 import { cn } from '../../lib/utils';
@@ -11,17 +11,17 @@ import { Avatar } from './DataDisplay';
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard',      id: 'dashboard' },
-  { icon: Search,          label: 'Search Designs', id: 'search'    },
-  { icon: Upload,          label: 'Upload',         id: 'upload'    },
-  { icon: Database,        label: 'Catalogue',      id: 'catalogue' },
-  { icon: Clock,           label: 'Search History', id: 'history'   },
-  { icon: Bookmark,        label: 'Saved Searches', id: 'saved'     },
-  { icon: Activity,        label: 'AI Status',      id: 'status'    },
+  { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
+  { icon: Search, label: 'Search Designs', id: 'search' },
+  { icon: Upload, label: 'Upload', id: 'upload' },
+  { icon: Database, label: 'Catalogue', id: 'catalogue' },
+  { icon: Clock, label: 'Search History', id: 'history' },
+  { icon: Bookmark, label: 'Saved Searches', id: 'saved' },
+  { icon: Activity, label: 'AI Status', id: 'status' },
 ];
 
 const bottomItems = [
-  { icon: Settings,        label: 'Settings',       id: 'settings' },
+  { icon: Settings, label: 'Settings', id: 'settings' },
 ];
 
 export function Sidebar({ onItemClick, className }) {
@@ -35,15 +35,14 @@ export function Sidebar({ onItemClick, className }) {
       )}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-14 border-b border-stone-100 shrink-0">
-        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center shrink-0">
-          <Gem size={14} className="text-white" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[0.8125rem] font-bold text-stone-900 tracking-[-0.01em] truncate">
+      <div className="flex items-center justify-center px-4 h-14 border-b border-stone-100 shrink-0">
+        <div className="min-w-0 flex flex-col items-center justify-center mt-1">
+          <p className="font-serif text-[1.75rem] font-semibold text-stone-900 tracking-wide truncate leading-none">
             Anaadi
           </p>
-          <p className="text-[10px] text-stone-400 truncate">Jewellery AI</p>
+          <p className="text-[8px] text-stone-400 font-medium uppercase tracking-[0.2em] truncate mt-1">
+            Jewellery AI
+          </p>
         </div>
       </div>
 
@@ -157,7 +156,7 @@ export function Breadcrumb({ items = [], className }) {
         <span key={i} className="flex items-center gap-1.5">
           {i > 0 && (
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-stone-300">
-              <path d="M4.5 2.5L7.5 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M4.5 2.5L7.5 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           )}
           {item.href ? (
