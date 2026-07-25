@@ -4,6 +4,7 @@ const path = require("path");
 const AppError = require("../../utils/AppError");
 const logger = require("../../utils/logger");
 const config = require("../../config/config");
+const preprocessingPipeline = require("./preprocessing");
 
 class EmbeddingService {
   constructor() {
@@ -31,6 +32,10 @@ class EmbeddingService {
       if (typeof this._adapter.getContext !== 'function') throw new Error("Adapter missing getContext() method");
 
       await this._adapter.initialize();
+
+      // Initialize preprocessing pipeline (loads segmentation ONNX if enabled)
+      await preprocessingPipeline.initialise();
+
       this._isReady = true;
       
       const context = this._adapter.getContext();
@@ -46,10 +51,27 @@ class EmbeddingService {
     return this._adapter.getContext();
   }
 
-  /** Delegates embedding generation to the active adapter. */
-  async embed(imageBuffer) {
+  /**
+   * Delegates embedding generation to the active adapter.
+   *
+   * @param {Buffer} imageBuffer - Raw image buffer.
+   * @param {object} [options={}]
+   * @param {boolean} [options.skipPreprocessing=false]
+   *   When true, the dealer-photo preprocessing pipeline (QA, CLAHE, IS-Net) is
+   *   bypassed entirely. Use this for clean CAD catalogue images during indexing.
+   *   Model-specific resize + normalisation still runs inside the adapter's embed().
+   */
+  async embed(imageBuffer, options = {}) {
     this._assertReady();
-    return await this._adapter.embed(imageBuffer);
+
+    if (options.skipPreprocessing) {
+      // Catalogue path: raw buffer → adapter (resize + normalise only)
+      return await this._adapter.embed(imageBuffer);
+    }
+
+    // Query path: dealer photo → preprocessing pipeline → adapter
+    const { buffer: processedBuffer } = await preprocessingPipeline.process(imageBuffer);
+    return await this._adapter.embed(processedBuffer);
   }
 
   /** Delegates batch embedding to the active adapter if supported. */

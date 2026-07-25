@@ -11,17 +11,17 @@ import { Avatar } from './DataDisplay';
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard',      id: 'dashboard' },
-  { icon: Search,          label: 'Search Designs', id: 'search'    },
-  { icon: Upload,          label: 'Upload',         id: 'upload'    },
-  { icon: Database,        label: 'Catalogue',      id: 'catalogue' },
-  { icon: Clock,           label: 'Search History', id: 'history'   },
-  { icon: Bookmark,        label: 'Saved Searches', id: 'saved'     },
-  { icon: Activity,        label: 'AI Status',      id: 'status'    },
+  { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
+  { icon: Search, label: 'Search Designs', id: 'search' },
+  { icon: Upload, label: 'Upload', id: 'upload' },
+  { icon: Database, label: 'Catalogue', id: 'catalogue' },
+  { icon: Clock, label: 'Search History', id: 'history' },
+  { icon: Bookmark, label: 'Saved Searches', id: 'saved' },
+  { icon: Activity, label: 'AI Status', id: 'status' },
 ];
 
 const bottomItems = [
-  { icon: Settings,        label: 'Settings',       id: 'settings' },
+  { icon: Settings, label: 'Settings', id: 'settings' },
 ];
 
 export function Sidebar({ onItemClick, className }) {
@@ -30,20 +30,19 @@ export function Sidebar({ onItemClick, className }) {
   return (
     <aside
       className={cn(
-        'relative flex flex-col h-full w-60 bg-white border-r border-stone-200 shrink-0',
+        'hidden md:flex relative flex-col h-full w-60 bg-white border-r border-stone-200 shrink-0',
         className
       )}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-14 border-b border-stone-100 shrink-0">
-        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center shrink-0">
-          <Gem size={14} className="text-white" />
-        </div>
+      <div className="flex flex-col justify-center px-5 h-16 border-b border-stone-100 shrink-0">
         <div className="min-w-0">
-          <p className="text-[0.8125rem] font-bold text-stone-900 tracking-[-0.01em] truncate">
-            Anaadi
+          <h1 className="text-lg font-bold text-stone-900 tracking-tight leading-none">
+            Anaadi<span className="text-accent">.</span>
+          </h1>
+          <p className="text-[9px] uppercase tracking-[0.15em] font-semibold text-stone-400 mt-1.5 truncate">
+            Enterprise AI
           </p>
-          <p className="text-[10px] text-stone-400 truncate">Jewellery AI</p>
         </div>
       </div>
 
@@ -121,19 +120,37 @@ function SidebarItem({ item, onClick }) {
 }
 
 // ─── Top Bar ──────────────────────────────────────────────────────────────────
-export function TopBar({ title, breadcrumb, actions, className }) {
+export function TopBar({ title, breadcrumb, actions, className, onMenuClick }) {
   return (
     <header
       className={cn(
         'flex items-center justify-between gap-4',
-        'h-14 px-6 border-b border-stone-200 bg-white',
+        'h-12 md:h-14 px-4 md:px-6 border-b border-stone-200 bg-white',
         'shrink-0',
         className
       )}
     >
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center gap-3 min-w-0">
+        <button
+          onClick={onMenuClick}
+          className="md:hidden p-1.5 -ml-1.5 rounded-md text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors"
+          aria-label="Open menu"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
         {breadcrumb ? (
-          <Breadcrumb items={breadcrumb} />
+          <>
+            <div className="hidden md:block min-w-0">
+              <Breadcrumb items={breadcrumb} />
+            </div>
+            <h1 className="md:hidden text-sm font-semibold text-stone-900 truncate">
+              {title}
+            </h1>
+          </>
         ) : (
           <h1 className="text-[0.9375rem] font-semibold text-stone-900 tracking-[-0.01em] truncate">
             {title}
@@ -152,32 +169,33 @@ export function TopBar({ title, breadcrumb, actions, className }) {
 // ─── Breadcrumb ───────────────────────────────────────────────────────────────
 export function Breadcrumb({ items = [], className }) {
   return (
-    <nav className={cn('flex items-center gap-1.5 text-sm', className)} aria-label="Breadcrumb">
-      {items.map((item, i) => (
-        <span key={i} className="flex items-center gap-1.5">
+    <nav className={cn('flex items-center gap-1.5 text-sm min-w-0', className)} aria-label="Breadcrumb">
+      {items.map((item, i) => {
+        const isLast = i === items.length - 1;
+        return (
+        <span key={i} className={cn("flex items-center gap-1.5", isLast ? "min-w-0" : "shrink-0")}>
           {i > 0 && (
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-stone-300">
-              <path d="M4.5 2.5L7.5 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-stone-300 shrink-0">
+              <path d="M4.5 2.5L7.5 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           )}
           {item.href ? (
             <a
               href={item.href}
-              className="text-stone-500 hover:text-stone-800 transition-colors duration-100"
+              className="text-stone-500 hover:text-stone-800 transition-colors duration-100 truncate max-w-[150px] lg:max-w-none"
             >
               {item.label}
             </a>
           ) : (
             <span className={cn(
-              i === items.length - 1
-                ? 'font-medium text-stone-900'
-                : 'text-stone-500'
+              "truncate",
+              isLast ? 'font-medium text-stone-900' : 'text-stone-500 max-w-[150px] lg:max-w-none'
             )}>
               {item.label}
             </span>
           )}
         </span>
-      ))}
+      )})}
     </nav>
   );
 }

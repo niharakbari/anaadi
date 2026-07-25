@@ -1,4 +1,4 @@
-const db = require("./src/config/database");
+const db = require("../../src/config/database");
 
 async function check() {
   const [rows] = await db.query("SELECT * FROM search_history");

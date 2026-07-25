@@ -1,0 +1,32 @@
+{
+  "query": "cf9f0e68-9f99-42d6-a5fc-736886e68e5a.JPG",
+  "expected": "design_1784956197652-5506130dcac828f3.JPG",
+  "retrievedRank": 7,
+  "latencyMs": 16844,
+  "top3": [
+    {
+      "id": "958",
+      "storedFilename": "design_1784956197671-37e56d7e0ba69fcf.JPG",
+      "semanticScore": 0.9223169088363647,
+      "verificationScore": 0.08,
+      "hybridScore": 0.3326950726509094,
+      "filename": "ER-0558.JPG"
+    },
+    {
+      "id": "974",
+      "storedFilename": "design_1784956197701-99417714f288de6b.JPG",
+      "semanticScore": 0.9134804606437683,
+      "verificationScore": 0.07,
+      "hybridScore": 0.3230441381931305,
+      "filename": "ER-0465.JPG"
+    },
+    {
+      "id": "971",
+      "storedFilename": "design_1784956197691-31846db6559d3e44.jpg",
+      "semanticScore": 0.9036037921905518,
+      "verificationScore": 0.07,
+      "hybridScore": 0.3200811376571655,
+      "filename": "ER-0427.jpg"
+    }
+  ]
+}

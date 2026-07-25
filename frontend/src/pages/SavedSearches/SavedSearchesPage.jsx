@@ -205,8 +205,8 @@ export default function SavedSearchesPage() {
           <H2 className="text-stone-800">Saved Searches</H2>
           <Body className="text-stone-500">Access your saved client enquiries and selected designs.</Body>
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="w-64">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <div className="flex-1 sm:w-64">
             <SearchInput
               id="saved-search-filter"
               value={searchTerm}
@@ -219,7 +219,7 @@ export default function SavedSearchesPage() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="h-10 appearance-none bg-white border border-stone-200 text-stone-700 text-sm font-medium rounded-md px-3 pr-8 cursor-pointer outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent"
+            className="h-10 appearance-none bg-white border border-stone-200 text-stone-700 text-sm font-medium rounded-md px-3 pr-8 cursor-pointer outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent shrink-0 w-full sm:w-auto"
           >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>

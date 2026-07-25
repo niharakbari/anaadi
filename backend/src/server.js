@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const app = require("./app");
-const { embeddingService, indexService } = require("./services/ai");
+const { embeddingService, indexService, verificationService } = require("./services/ai");
 
 const config = require("./config/config");
 const logger = require("./utils/logger");
@@ -25,6 +25,7 @@ async function bootstrap() {
 
         await embeddingService.initialise();
         await indexService.initialise();
+        await verificationService.initialise();
 
         const aiContext = embeddingService.getContext();
         const vectorCount = indexService._index ? indexService._index.getCurrentCount() : 0;

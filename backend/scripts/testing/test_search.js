@@ -2,7 +2,7 @@
 
 const path = require("path");
 const fs = require("fs");
-const { searchService, embeddingService, indexService } = require("./src/services/ai");
+const { searchService, embeddingService, indexService } = require("../../src/services/ai");
 
 async function main() {
   await embeddingService.initialise();

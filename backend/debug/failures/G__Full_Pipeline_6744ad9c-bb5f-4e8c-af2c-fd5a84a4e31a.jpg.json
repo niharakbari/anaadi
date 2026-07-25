@@ -1,0 +1,34 @@
+{
+  "ablation": "G. Full Pipeline",
+  "query": "6744ad9c-bb5f-4e8c-af2c-fd5a84a4e31a.jpg",
+  "expected": "design_1784720347625",
+  "retrievedRank": -1,
+  "searchLatencyMs": 3133,
+  "results": [
+    {
+      "rank": 1,
+      "id": "825",
+      "filename": "ER-0494.JPG"
+    },
+    {
+      "rank": 2,
+      "id": "798",
+      "filename": "PS-0894-E.JPG"
+    },
+    {
+      "rank": 3,
+      "id": "807",
+      "filename": "ER-0561.JPG"
+    },
+    {
+      "rank": 4,
+      "id": "810",
+      "filename": "PS-0883-E.JPG"
+    },
+    {
+      "rank": 5,
+      "id": "800",
+      "filename": "ER-0538.JPG"
+    }
+  ]
+}

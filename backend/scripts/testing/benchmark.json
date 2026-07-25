@@ -1,0 +1,22 @@
+[
+  {
+    "query": "cf9f0e68-9f99-42d6-a5fc-736886e68e5a.JPG",
+    "expected": "design_1784956197652-5506130dcac828f3.JPG"
+  },
+  {
+    "query": "ddcb4f52-21eb-4985-88a6-66bb5132a1ca.JPG",
+    "expected": "design_1784956197656-315d96efe7e2cce1.JPG"
+  },
+  {
+    "query": "PS-0359-O1-REF (1).JPG",
+    "expected": "design_1784956197653-03d0bdac42863377.JPG"
+  },
+  {
+    "query": "PS-0490-E-O-REF.JPG",
+    "expected": "design_1784956197655-7492c1fa3a6eff86.JPG"
+  },
+  {
+    "query": "PS-0572-E-.jpg",
+    "expected": "design_1784956197658-497fbcaef5148bcf.JPG"
+  }
+]

@@ -19,7 +19,8 @@ uploads/
 indexes/
 
 # AI model assets (ONNX weights and tokenizers)
-ai-models/
+ai-models/openclip/visual.onnx
+ai-models/dinov2/visual.onnx
 
 # Editor/IDE configurations
 .vscode/
@@ -30,5 +31,3 @@ ai-models/
 .DS_Store
 Thumbs.db
 ehthumbs.db
-
-

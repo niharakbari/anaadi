@@ -42,6 +42,8 @@ async function saveSearchHistory(userId, imageDetails, results) {
         r.similarityScore
       ]);
       
+      console.log("[DEBUG] Inserting into search_history_results:", values);
+      
       await connection.query(sqlResults, [values]);
     }
     

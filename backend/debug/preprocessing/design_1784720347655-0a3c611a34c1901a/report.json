@@ -1,0 +1,30 @@
+{
+  "file": "design_1784720347655-0a3c611a34c1901a.JPG",
+  "stages": {
+    "original": {
+      "width": 2480,
+      "height": 1520
+    },
+    "qualityAssessment": {
+      "quality": "moderate",
+      "blurScore": 2914.1,
+      "brightness": 230.4,
+      "contrast": 48.9,
+      "resolution": 3769600,
+      "width": 2480,
+      "height": 1520,
+      "reasons": [
+        "overexposed (brightness=230.4)"
+      ],
+      "latencyMs": 86
+    },
+    "enhancement": {
+      "latencyMs": 237
+    },
+    "segmentation": {
+      "applied": false,
+      "reason": "disabled or model not loaded"
+    }
+  },
+  "totalLatencyMs": 420
+}

@@ -14,14 +14,16 @@ import NotFoundPage from './pages/NotFound/NotFoundPage';
 
 import { AISearchProvider } from './context/AISearchContext';
 import { AuthProvider } from './context/AuthContext';
+import { ImportJobProvider } from './context/ImportJobContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
   return (
     <AuthProvider>
       <AISearchProvider>
-        <BrowserRouter>
-          <Routes>
+        <ImportJobProvider>
+          <BrowserRouter>
+            <Routes>
             {/* Public Login Route (No Layout Shell Wrapper) */}
             <Route path="/login" element={<LoginPage />} />
 
@@ -41,9 +43,10 @@ export default function App() {
 
           {/* Standalone Design System Preview Sandbox */}
           <Route path="/design-system" element={<DesignSystemPage />} />
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </BrowserRouter>
+      </ImportJobProvider>
     </AISearchProvider>
-    </AuthProvider>
-  );
+  </AuthProvider>
+);
 }

@@ -17,7 +17,7 @@ export default function DashboardPage() {
         const res = await fetch(`${apiBaseUrl}/api/dashboard/stats`, {
           credentials: 'include'
         });
-        
+
         if (res.status === 401) {
           window.dispatchEvent(new Event('unauthorized'));
           return;
@@ -36,8 +36,8 @@ export default function DashboardPage() {
   }, [apiBaseUrl]);
 
   return (
-    <div className="space-y-6">
-      <div className="mb-4">
+    <div className="space-y-4 md:space-y-6">
+      <div className="mb-2 md:mb-4">
         <H2 className="text-stone-800">Welcome Back, Rahul</H2>
         <Body className="text-stone-500">Here is the current overview of the jewellery search index.</Body>
       </div>
@@ -48,7 +48,7 @@ export default function DashboardPage() {
           <Loader2 size={24} className="animate-spin text-accent" />
         </div>
       ) : stats ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Total Designs" value={stats.totalDesigns.toLocaleString()} icon={Database} change="Live" changeLabel="from DB" trend="neutral" />
           <StatCard label="Searches Today" value={stats.searchesToday.toLocaleString()} icon={Search} change="+12%" changeLabel="vs yesterday" trend="up" />
           <StatCard label="Pending Reviews" value={stats.pendingReviews.toLocaleString()} icon={Clock} change="+3" changeLabel="new" trend="down" />

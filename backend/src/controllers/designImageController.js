@@ -5,13 +5,65 @@ const designImageModel = require("../models/designImageModel");
 const searchService = require("../services/ai/searchService");
 const logger = require("../utils/logger");
 
+const zipImportService = require("../services/zipImportService");
+const importJobService = require("../services/importJobService");
+
 async function importImages(req, res, next) {
   try {
-    const result = await imageImportService.importImages(req.files);
-    const statusCode = result.failedImports > 0 ? 207 : 201;
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ success: false, message: "No files uploaded." });
+    }
 
-    return res.status(statusCode).json(result);
+    // Check if the first file is a ZIP
+    const isZip = req.files[0].mimetype === 'application/zip' || req.files[0].mimetype === 'application/x-zip-compressed';
 
+    if (isZip) {
+      if (req.files.length > 1) {
+        return res.status(400).json({ success: false, message: "Please upload only one ZIP file at a time." });
+      }
+      const zipFile = req.files[0];
+      const jobId = importJobService.createJob('zip');
+      
+      // Start background process
+      zipImportService.importZip(zipFile, jobId).catch(err => {
+        logger.error(`[Controller] ZIP background job failed: ${err.message}`);
+      });
+
+      return res.status(202).json({ success: true, jobId, message: "ZIP import started in background." });
+    } else {
+      const jobId = importJobService.createJob('images', req.files.length);
+
+      // Start background process
+      imageImportService.importImages(req.files, jobId).catch(err => {
+        logger.error(`[Controller] Images background job failed: ${err.message}`);
+      });
+
+      return res.status(202).json({ success: true, jobId, message: "Image import started in background." });
+    }
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getJobStatus(req, res, next) {
+  try {
+    const { jobId } = req.params;
+    const job = importJobService.getJob(jobId);
+
+    if (!job) {
+      return res.status(404).json({ success: false, message: "Job not found." });
+    }
+
+    return res.json({ success: true, job });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getActiveJobs(req, res, next) {
+  try {
+    const activeJobs = importJobService.getActiveJobs();
+    return res.json({ success: true, activeJobs });
   } catch (error) {
     next(error);
   }
@@ -158,4 +210,6 @@ module.exports = {
   getAllImages,
   deleteImage,
   deleteAllImages,
+  getJobStatus,
+  getActiveJobs,
 };

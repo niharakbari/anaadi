@@ -1,0 +1,34 @@
+{
+  "ablation": "F. CLAHE + Segmentation",
+  "query": "3e9a6dec-c481-4fc4-ac4d-99de343f3e1b.jpg",
+  "expected": "design_1784720347620",
+  "retrievedRank": -1,
+  "searchLatencyMs": 2773,
+  "results": [
+    {
+      "rank": 1,
+      "id": "825",
+      "filename": "ER-0494.JPG"
+    },
+    {
+      "rank": 2,
+      "id": "813",
+      "filename": "ER-0528.JPG"
+    },
+    {
+      "rank": 3,
+      "id": "812",
+      "filename": "ER-0520.JPG"
+    },
+    {
+      "rank": 4,
+      "id": "800",
+      "filename": "ER-0538.JPG"
+    },
+    {
+      "rank": 5,
+      "id": "801",
+      "filename": "ER-0548.JPG"
+    }
+  ]
+}

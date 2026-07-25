@@ -328,18 +328,27 @@ class IndexService {
    */
   async rebuild(maxElements = 100_000) {
     const embeddingService = this._requireEmbeddingService();
-    const imageFiles       = await this._scanDesignLibrary();
+    const designImageModel = require("../../models/designImageModel");
+    
+    // Read directly from database to ensure imageId is the primary key
+    const dbImages = await designImageModel.findAll();
+    
+    if (dbImages.length === 0) {
+      logger.warn("IndexService.rebuild(): no images found in database.");
+    } else {
+      logger.info(`IndexService.rebuild(): found ${dbImages.length} images in database`);
+    }
 
-    await this.createIndex(Math.max(maxElements, imageFiles.length + 1));
+    await this.createIndex(Math.max(maxElements, dbImages.length + 1));
 
-    const stats = await this._embedAllImages(imageFiles, embeddingService);
+    const stats = await this._embedAllImages(dbImages, embeddingService);
 
     this._activateIndex();
     await this.saveIndex();
 
     logger.info(
-      `IndexService.rebuild(): done — ` +
-      `processed=${stats.processed} skipped=${stats.skipped} failed=${stats.failed}`
+      `IndexService.rebuild(): completed. Processed: ${stats.processed}, ` +
+      `Failed: ${stats.failed}`
     );
 
     return stats;
@@ -508,41 +517,44 @@ class IndexService {
     return imageFiles;
   }
 
-  /** Iterates over image filenames, embeds each one, and inserts into index. */
-  async _embedAllImages(filenames, embeddingService) {
+  /** Iterates over db image rows, embeds each one, and inserts into index. */
+  async _embedAllImages(dbRows, embeddingService) {
     let processed = 0;
-    let skipped   = 0;
     let failed    = 0;
 
     const multiViewService = require("./multiViewService");
 
-    for (const filename of filenames) {
+    for (const row of dbRows) {
       try {
-        const imageId     = path.basename(filename, path.extname(filename));
-        const fullPath    = path.join(DESIGN_LIBRARY_PATH, filename);
+        const imageId     = String(row.id);
+        const fullPath    = path.join(DESIGN_LIBRARY_PATH, row.stored_filename);
         const imageBuffer = await fs.readFile(fullPath);
 
-        logger.info(`Import: Processing ${imageId}...`);
+        logger.info(`Import: Processing ${imageId} (${row.stored_filename})...`);
         const cropBuffers = await multiViewService.extractViews(imageBuffer);
         logger.info(`Detected ${cropBuffers.length} jewellery views.`);
         
         let viewCount = 1;
         for (const cropBuf of cropBuffers) {
-           const embedding = await embeddingService.embed(cropBuf);
+           const embedding = await embeddingService.embed(cropBuf, { skipPreprocessing: true });
            this._ensureCapacity(1, "rebuild._embedAllImages");
            this._insertPoint(imageId, embedding, viewCount, cropBuffers.length);
            viewCount++;
         }
         logger.info(`Generated ${cropBuffers.length} embeddings.`);
+        
+        // Extract and save verification patches using the main crop
+        const verificationService = require("./verification/verificationService");
+        await verificationService.indexFeatures(imageId, cropBuffers[0] || imageBuffer);
 
         processed++;
       } catch (error) {
-        logger.error(`IndexService.rebuild(): failed "${filename}" — ${error.message}`);
+        logger.error(`IndexService.rebuild(): failed image ID ${row.id} — ${error.message}`);
         failed++;
       }
     }
 
-    return { processed, skipped, failed };
+    return { processed, failed };
   }
   /** Throws 503 if the index has not been initialised. */
   _assertReady(callerName) {

@@ -7,6 +7,7 @@
 
 const logger   = require("../../utils/logger");
 const AppError = require("../../utils/AppError");
+const config   = require("../../config/config");
 
 const embeddingService = require("./embeddingService");
 const indexService     = require("./indexService");
@@ -57,14 +58,32 @@ class SearchService {
       }
     }
     
-    // Sort merged results and slice to k
+    // Sort merged results (we slice to K later if verification is disabled)
     const mergedResults = Array.from(mergedMap.values())
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, k);
+      .sort((a, b) => a.distance - b.distance);
 
-    logger.info(`Search: Requested Top ${k}. Retrieved ${allRawResults.length} vectors. Merged into ${mergedMap.size} unique designs. Returned Top ${mergedResults.length}.`);
+    let finalCandidates;
+    const verificationService = require("./verification/verificationService");
 
-    return await this._buildResults(mergedResults, options);
+    if (options.verify || config.verification.enabled) {
+      // 5. Build results for Top K*2 semantic candidates
+      const fetchVerifyCount = Math.max(k * 2, config.verification.candidateCount);
+      const topSemantic = mergedResults.slice(0, fetchVerifyCount);
+      const builtSemantic = await this._buildResults(topSemantic, options);
+      
+      // 6. Pass to Verification Pipeline
+      finalCandidates = await verificationService.verifyCandidates(imageBuffer, builtSemantic);
+      
+      // Slice back to requested K
+      finalCandidates = finalCandidates.slice(0, k);
+    } else {
+      // Direct ANN output
+      finalCandidates = await this._buildResults(mergedResults.slice(0, k), options);
+    }
+
+    logger.info(`Search: Requested Top ${k}. Retrieved ${allRawResults.length} vectors. Merged into ${mergedMap.size}. Returned Top ${finalCandidates.length}.`);
+
+    return finalCandidates;
   }
 
   /** Not implemented: raw embeddings are not persisted outside the HNSW graph. */
@@ -116,6 +135,12 @@ class SearchService {
     }
 
     await indexService.addVectors(imageId, embeddings);
+    
+    // Save verification patch features
+    // We pass the raw imageBuffer here since the adapter handles its own preprocessing/cropping if necessary.
+    // However, multiViewService already found the best crop, so we could just use cropBuffers[0].
+    const verificationService = require("./verification/verificationService");
+    await verificationService.indexFeatures(imageId, cropBuffers[0] || imageBuffer);
 
     logger.info(`SearchService.registerImage(): indexed imageId=${imageId} with ${embeddings.length} views`);
   }

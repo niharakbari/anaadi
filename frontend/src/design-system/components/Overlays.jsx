@@ -7,11 +7,11 @@ import { cn } from '../../lib/utils';
 // ─── Dialog ───────────────────────────────────────────────────────────────────
 export function Dialog({ open, onClose, title, description, children, footer, size = 'md', className }) {
   const sizes = {
-    sm:  'max-w-sm',
-    md:  'max-w-lg',
-    lg:  'max-w-2xl',
-    xl:  'max-w-4xl',
-    full:'max-w-[90vw]',
+    sm: 'max-w-sm',
+    md: 'max-w-lg',
+    lg: 'max-w-2xl',
+    xl: 'max-w-4xl',
+    full: 'max-w-[90vw]',
   };
 
   // Close on Escape
@@ -24,7 +24,7 @@ export function Dialog({ open, onClose, title, description, children, footer, si
   // Lock scroll
   useEffect(() => {
     if (open) document.body.style.overflow = 'hidden';
-    else       document.body.style.overflow = '';
+    else document.body.style.overflow = '';
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
@@ -96,14 +96,14 @@ export function Dialog({ open, onClose, title, description, children, footer, si
 export function Sheet({ open, onClose, title, children, side = 'right', width = '400px', className }) {
   const slideVariants = {
     right: {
-      hidden:  { x: '100%', opacity: 0.8 },
+      hidden: { x: '100%', opacity: 0.8 },
       visible: { x: 0, opacity: 1 },
-      exit:    { x: '100%', opacity: 0.8 },
+      exit: { x: '100%', opacity: 0.8 },
     },
     left: {
-      hidden:  { x: '-100%', opacity: 0.8 },
+      hidden: { x: '-100%', opacity: 0.8 },
       visible: { x: 0, opacity: 1 },
-      exit:    { x: '-100%', opacity: 0.8 },
+      exit: { x: '-100%', opacity: 0.8 },
     },
   };
 
@@ -178,10 +178,10 @@ export function Tooltip({ children, content, side = 'top', className }) {
           'bg-stone-900 text-white text-xs font-medium',
           'whitespace-nowrap shadow-lg',
           'after:content-[""] after:absolute after:border-4 after:border-transparent',
-          side === 'top'    && 'bottom-full left-1/2 -translate-x-1/2 mb-2 after:top-full after:left-1/2 after:-translate-x-1/2 after:border-t-stone-900',
+          side === 'top' && 'bottom-full left-1/2 -translate-x-1/2 mb-2 after:top-full after:left-1/2 after:-translate-x-1/2 after:border-t-stone-900',
           side === 'bottom' && 'top-full  left-1/2 -translate-x-1/2 mt-2 after:bottom-full after:left-1/2 after:-translate-x-1/2 after:border-b-stone-900',
-          side === 'left'   && 'right-full top-1/2 -translate-y-1/2 mr-2 after:left-full after:top-1/2 after:-translate-y-1/2 after:border-l-stone-900',
-          side === 'right'  && 'left-full  top-1/2 -translate-y-1/2 ml-2 after:right-full after:top-1/2 after:-translate-y-1/2 after:border-r-stone-900',
+          side === 'left' && 'right-full top-1/2 -translate-y-1/2 mr-2 after:left-full after:top-1/2 after:-translate-y-1/2 after:border-l-stone-900',
+          side === 'right' && 'left-full  top-1/2 -translate-y-1/2 ml-2 after:right-full after:top-1/2 after:-translate-y-1/2 after:border-r-stone-900',
         )}
       >
         {content}
@@ -248,7 +248,7 @@ export function Lightbox({ open, onClose, image, alt }) {
 
   useEffect(() => {
     if (open) document.body.style.overflow = 'hidden';
-    else       document.body.style.overflow = '';
+    else document.body.style.overflow = '';
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 

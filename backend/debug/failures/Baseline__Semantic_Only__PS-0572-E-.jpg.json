@@ -1,0 +1,29 @@
+{
+  "query": "PS-0572-E-.jpg",
+  "expected": "1784956197658",
+  "retrievedRank": -1,
+  "latencyMs": 2807,
+  "top3": [
+    {
+      "id": "951",
+      "designId": "951",
+      "verificationScore": null,
+      "hybridScore": null,
+      "filename": "PS-0908-E.JPG"
+    },
+    {
+      "id": "979",
+      "designId": "979",
+      "verificationScore": null,
+      "hybridScore": null,
+      "filename": "ER-0494.JPG"
+    },
+    {
+      "id": "952",
+      "designId": "952",
+      "verificationScore": null,
+      "hybridScore": null,
+      "filename": "PS-0894-E.JPG"
+    }
+  ]
+}

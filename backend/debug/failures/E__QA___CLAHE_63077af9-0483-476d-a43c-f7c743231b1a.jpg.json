@@ -1,0 +1,34 @@
+{
+  "ablation": "E. QA + CLAHE",
+  "query": "63077af9-0483-476d-a43c-f7c743231b1a.jpg",
+  "expected": "design_1784720347623",
+  "retrievedRank": -1,
+  "searchLatencyMs": 518,
+  "results": [
+    {
+      "rank": 1,
+      "id": "825",
+      "filename": "ER-0494.JPG"
+    },
+    {
+      "rank": 2,
+      "id": "833",
+      "filename": "PS-0478-E.jpeg"
+    },
+    {
+      "rank": 3,
+      "id": "801",
+      "filename": "ER-0548.JPG"
+    },
+    {
+      "rank": 4,
+      "id": "827",
+      "filename": "ER-0510.JPG"
+    },
+    {
+      "rank": 5,
+      "id": "813",
+      "filename": "ER-0528.JPG"
+    }
+  ]
+}

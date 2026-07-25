@@ -32,13 +32,15 @@ function fileFilter(req, file, cb) {
     "image/jpeg",
     "image/png",
     "image/webp",
+    "application/zip",
+    "application/x-zip-compressed"
   ];
 
   if (allowedMimeTypes.includes(file.mimetype)) {
     return cb(null, true);
   }
 
-  cb(new AppError("Only JPEG, PNG and WEBP images are allowed", 400));
+  cb(new AppError("Only JPEG, PNG, WEBP images and ZIP files are allowed", 400));
 }
 
 const upload = multer({

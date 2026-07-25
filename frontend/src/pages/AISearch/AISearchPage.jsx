@@ -210,11 +210,11 @@ export default function AISearchPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           {/* Left Column: Drag & Drop Upload and Image Preview */}
           <div className="lg:col-span-5 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-stone-200 pb-6 lg:pb-0 lg:pr-6">
-            <div className="space-y-3 h-full flex flex-col justify-between">
+            <div className="space-y-3 h-full flex flex-col justify-between w-full">
               <Label className="text-stone-500 block font-semibold">Reference Image</Label>
               {previewUrl ? (
                 <div
-                  className="relative flex-1 bg-stone-50 border border-stone-200 rounded-xl overflow-hidden flex flex-col items-center justify-center cursor-pointer hover:shadow-md transition-all group"
+                  className="relative flex-1 bg-stone-50 border border-stone-200 rounded-xl overflow-hidden flex flex-col items-center justify-center cursor-pointer hover:shadow-md transition-all group w-full"
                   onClick={() => setQueryPreviewOpen(true)}
                   title="Click to preview"
                   style={{ minHeight: '160px', maxHeight: '400px' }}
@@ -252,8 +252,8 @@ export default function AISearchPage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col">
-                  <UploadZone accept="image/*" maxSize={10} onUpload={handleUpload} className="flex-1 min-h-[160px]" />
+                <div className="flex-1 flex flex-col w-full">
+                  <UploadZone accept="image/*" maxSize={10} onUpload={handleUpload} className="flex-1 min-h-[160px] w-full" />
                 </div>
               )}
             </div>
@@ -262,9 +262,9 @@ export default function AISearchPage() {
           {/* Right Column: Search Inputs & Actions */}
           <div className="lg:col-span-7 flex flex-col justify-between pl-0 lg:pl-6 space-y-4">
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label className="text-stone-500 block font-semibold">Search Input</Label>
-                <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <Label className="text-stone-500 block font-semibold shrink-0">Search Input</Label>
+                <div className="flex items-center gap-2 shrink-0">
                   <Label htmlFor="result-limit-select" className="text-stone-500 text-xs font-semibold shrink-0">
                     Results to Display:
                   </Label>
@@ -289,8 +289,8 @@ export default function AISearchPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-                <div className="flex-1">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-2 items-stretch sm:items-center">
+                <div className="flex-1 min-w-[200px]">
                   <SearchInput
                     id="search-input"
                     value={searchVal}
@@ -302,13 +302,13 @@ export default function AISearchPage() {
                     showShortcut={false}
                   />
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
                   {hasSearched ? (
                     <Button
                       variant="outline"
                       size="md"
                       onClick={searchNext}
-                      className="flex-1 sm:flex-initial border-accent/40 text-accent hover:bg-accent-subtle"
+                      className="flex-1 sm:flex-initial border-accent/40 text-accent hover:bg-accent-subtle whitespace-nowrap"
                       title="Clear query image and search results to start a new search"
                     >
                       <RotateCcw size={14} className="mr-1.5" />
@@ -367,7 +367,7 @@ export default function AISearchPage() {
           </div>
         ) : hasSearched ? (
           searchResults.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {searchResults.map((card, index) => {
                 const imgUrl = card.image
                   ? (card.image.startsWith('http') ? card.image : `${apiBaseUrl}${card.image}`)

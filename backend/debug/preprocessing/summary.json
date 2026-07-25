@@ -1,0 +1,88 @@
+{
+  "stats": {
+    "qa": {
+      "avg": 72,
+      "min": 58,
+      "max": 86,
+      "p95": 86
+    },
+    "enh": {
+      "avg": 231,
+      "min": 224,
+      "max": 237,
+      "p95": 237
+    },
+    "seg": {
+      "avg": 0,
+      "min": 0,
+      "max": 0,
+      "p95": 0
+    },
+    "total": {
+      "avg": 408,
+      "min": 395,
+      "max": 420,
+      "p95": 420
+    }
+  },
+  "images": [
+    {
+      "file": "design_1784720347616-913522549819d953.JPG",
+      "stages": {
+        "original": {
+          "width": 2480,
+          "height": 1490
+        },
+        "qualityAssessment": {
+          "quality": "good",
+          "blurScore": 3326.1,
+          "brightness": 219.9,
+          "contrast": 57.6,
+          "resolution": 3695200,
+          "width": 2480,
+          "height": 1490,
+          "reasons": [],
+          "latencyMs": 58
+        },
+        "enhancement": {
+          "latencyMs": 224
+        },
+        "segmentation": {
+          "applied": false,
+          "reason": "disabled or model not loaded"
+        }
+      },
+      "totalLatencyMs": 395
+    },
+    {
+      "file": "design_1784720347655-0a3c611a34c1901a.JPG",
+      "stages": {
+        "original": {
+          "width": 2480,
+          "height": 1520
+        },
+        "qualityAssessment": {
+          "quality": "moderate",
+          "blurScore": 2914.1,
+          "brightness": 230.4,
+          "contrast": 48.9,
+          "resolution": 3769600,
+          "width": 2480,
+          "height": 1520,
+          "reasons": [
+            "overexposed (brightness=230.4)"
+          ],
+          "latencyMs": 86
+        },
+        "enhancement": {
+          "latencyMs": 237
+        },
+        "segmentation": {
+          "applied": false,
+          "reason": "disabled or model not loaded"
+        }
+      },
+      "totalLatencyMs": 420
+    }
+  ]
+}

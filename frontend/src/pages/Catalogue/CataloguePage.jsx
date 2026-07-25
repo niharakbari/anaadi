@@ -317,7 +317,8 @@ export default function CataloguePage() {
             ))}
           </div>
         ) : (
-          <div className="overflow-hidden">
+          <>
+          <div className="hidden md:block w-full overflow-x-auto">
             <Table>
               <TableHead>
                 <tr>
@@ -390,7 +391,7 @@ export default function CataloguePage() {
                         align="right"
                         items={[
                           { label: 'View Details', icon: <ExternalLink size={13} />, onClick: () => openDetail(row) },
-                          { label: 'Re-index', icon: <RefreshCw size={13} />, onClick: () => {}, disabled: row.status === 'indexing' },
+                          { label: 'Re-index', icon: <RefreshCw size={13} />, onClick: () => { }, disabled: row.status === 'indexing' },
                           { separator: true },
                           { label: 'Delete Design', icon: <Trash2 size={13} />, onClick: () => setItemToDelete(row), destructive: true },
                         ]}
@@ -401,6 +402,59 @@ export default function CataloguePage() {
               </TableBody>
             </Table>
           </div>
+          
+          <div className="md:hidden space-y-3">
+            {filteredData.map((row) => (
+              <div key={row.id} className="flex flex-col p-4 bg-white border border-stone-200 rounded-lg shadow-sm gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Checkbox
+                      id={`row-mobile-${row.id}`}
+                      checked={selectedRows.includes(row.id)}
+                      onChange={() => toggleRow(row.id)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setActiveLightboxImage(row.thumbnail)}
+                      className="w-14 h-14 bg-stone-50 border border-stone-200 rounded-lg flex items-center justify-center overflow-hidden shrink-0 shadow-sm focus:outline-none"
+                    >
+                      {row.thumbnail ? <img src={row.thumbnail} className="w-full h-full object-cover" alt="" /> : <ImageIcon size={18} className="text-stone-400" />}
+                    </button>
+                    <div className="flex flex-col min-w-0">
+                      <button onClick={() => openDetail(row)} className="text-left font-semibold text-stone-900 text-sm truncate hover:text-accent focus:outline-none">
+                        {row.filename}
+                      </button>
+                      <span className="text-xs text-stone-500 font-mono mt-0.5 truncate">
+                        {row.uploadDate ? new Date(row.uploadDate).toLocaleDateString() : 'Just now'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <DropdownMenu
+                      trigger={
+                        <IconButton variant="ghost" size="icon-sm">
+                          <MoreHorizontal size={14} />
+                        </IconButton>
+                      }
+                      align="right"
+                      items={[
+                        { label: 'View Details', icon: <ExternalLink size={13} />, onClick: () => openDetail(row) },
+                        { label: 'Re-index', icon: <RefreshCw size={13} />, onClick: () => { }, disabled: row.status === 'indexing' },
+                        { separator: true },
+                        { label: 'Delete Design', icon: <Trash2 size={13} />, onClick: () => setItemToDelete(row), destructive: true },
+                      ]}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center pl-[2.25rem]">
+                  <Badge variant={row.status === 'indexed' ? 'active' : row.status === 'failed' ? 'error' : 'pending'} dot size="sm">
+                    {row.status}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+          </>
         )}
 
         <Pagination

@@ -5,6 +5,7 @@ const designImageRoutes = require("./designImageRoutes");
 const searchRoutes = require("./searchRoutes");
 const dashboardRoutes = require("./dashboardRoutes");
 const savedSearchRoutes = require("./savedSearchRoutes");
+const healthRoutes = require("./healthRoutes");
 
 const verifyToken = require("../middlewares/verifyToken");
 
@@ -16,6 +17,7 @@ router.get("/", (req, res) => {
   });
 });
 
+router.use("/", healthRoutes);
 router.use("/auth", authRoutes);
 router.use("/design-images", verifyToken, designImageRoutes);
 router.use("/search", verifyToken, searchRoutes);

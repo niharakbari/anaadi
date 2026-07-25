@@ -34,7 +34,7 @@ function Thumbnail({ src, alt, apiBaseUrl, type }) {
 export default function SearchHistoryPage() {
   const navigate = useNavigate();
   const { setPreviewUrl, setSearchResults, setHasSearched, setUploadedFile, setSearchVal } = useAISearch();
-  
+
   const [historyData, setHistoryData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -61,7 +61,7 @@ export default function SearchHistoryPage() {
       }
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to fetch history');
-      
+
       setHistoryData(data.rows || []);
       setTotalPages(data.totalPages || 1);
     } catch (err) {
@@ -80,7 +80,7 @@ export default function SearchHistoryPage() {
     if (!window.confirm("Are you sure you want to clear all your search history? This cannot be undone.")) {
       return;
     }
-    
+
     try {
       const res = await fetch(`${apiBaseUrl}/api/search/history`, {
         method: 'DELETE',
@@ -92,7 +92,7 @@ export default function SearchHistoryPage() {
       }
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to clear history');
-      
+
       addToast('success', 'Success', 'Search history cleared successfully.');
       setHistoryData([]);
       setTotalPages(1);
@@ -106,12 +106,12 @@ export default function SearchHistoryPage() {
     if (row.type?.startsWith('Image')) {
       if (row.query_image_path) {
         const fullUrl = row.query_image_path.startsWith('http') ? row.query_image_path : `${apiBaseUrl}${row.query_image_path}`;
-        
+
         try {
           const res = await fetch(fullUrl);
           if (!res.ok) throw new Error('Image fetch failed');
           const blob = await res.blob();
-          
+
           const file = new File([blob], row.query_image_original_name || 'query_image.jpg', { type: blob.type || 'image/jpeg' });
           setUploadedFile(file);
           setPreviewUrl(URL.createObjectURL(file));
@@ -137,17 +137,17 @@ export default function SearchHistoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <H2 className="text-stone-800">Search History</H2>
           <Body className="text-stone-500">Audit trail of AI queries, search methods, matching catalogue items, and similarity percentages.</Body>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleClearHistory} 
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleClearHistory}
           disabled={historyData.length === 0}
-          className="text-error border-red-200 hover:bg-red-50"
+          className="text-error border-red-200 hover:bg-red-50 shrink-0 self-start sm:self-auto"
         >
           <Trash2 size={14} className="mr-2" />
           Clear History
@@ -155,9 +155,10 @@ export default function SearchHistoryPage() {
       </div>
 
       <div className="space-y-4 bg-white border border-stone-200 rounded-lg p-5 shadow-xs">
-        <Table>
-          <TableHead>
-            <tr>
+        <div className="hidden md:block w-full overflow-x-auto">
+          <Table>
+            <TableHead>
+              <tr>
               <TableHeader>Query ID</TableHeader>
               <TableHeader>Query Parameter</TableHeader>
               <TableHeader>Search Type</TableHeader>
@@ -177,8 +178,8 @@ export default function SearchHistoryPage() {
               </TableRow>
             ) : (
               historyData.map((row) => (
-                <TableRow 
-                  key={row.id} 
+                <TableRow
+                  key={row.id}
                   onClick={() => handleRowClick(row)}
                   className="cursor-pointer hover:bg-stone-50 transition-colors"
                 >
@@ -187,10 +188,10 @@ export default function SearchHistoryPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Thumbnail 
-                        src={row.query_image_path} 
-                        alt={row.query_image_original_name || row.query} 
-                        apiBaseUrl={apiBaseUrl} 
+                      <Thumbnail
+                        src={row.query_image_path}
+                        alt={row.query_image_original_name || row.query}
+                        apiBaseUrl={apiBaseUrl}
                         type={row.type}
                       />
                       <div className="flex flex-col min-w-0">
@@ -227,6 +228,57 @@ export default function SearchHistoryPage() {
             )}
           </TableBody>
         </Table>
+        </div>
+
+        <div className="md:hidden space-y-3">
+          {loading ? (
+            <div className="text-center py-8 text-stone-500 text-sm">Loading history...</div>
+          ) : historyData.length === 0 ? (
+            <div className="text-center py-8 text-stone-500 text-sm">No search history found.</div>
+          ) : (
+            historyData.map((row) => (
+              <div 
+                key={row.id} 
+                onClick={() => handleRowClick(row)}
+                className="flex flex-col p-4 bg-white border border-stone-200 rounded-lg shadow-sm gap-3 cursor-pointer hover:border-accent transition-colors"
+              >
+                <div className="flex items-start gap-3">
+                  <Thumbnail
+                    src={row.query_image_path}
+                    alt={row.query_image_original_name || row.query}
+                    apiBaseUrl={apiBaseUrl}
+                    type={row.type}
+                  />
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="font-medium text-stone-900 text-sm truncate" title={row.query_image_original_name || row.query}>
+                      {row.query_image_original_name || row.query}
+                    </span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant={row.type?.startsWith('Image') ? 'accent' : 'default'} size="sm">
+                        {row.type}
+                      </Badge>
+                      <span className="text-xs text-stone-500 font-mono">ID: {row.id}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-1 pt-3 border-t border-stone-100">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-stone-400 uppercase tracking-wider font-semibold">Top Match</span>
+                    <span className="font-semibold text-stone-800 text-sm mt-0.5">
+                      {Math.round((row.similarity || 0) * 100)}%
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] text-stone-400 uppercase tracking-wider font-semibold">Time</span>
+                    <span className="text-xs text-stone-600 mt-0.5">
+                      {new Date(row.time).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
 
         {historyData.length > 0 && (
           <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />

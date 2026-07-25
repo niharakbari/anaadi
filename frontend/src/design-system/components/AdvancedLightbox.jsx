@@ -89,14 +89,14 @@ export function AdvancedLightbox({
       const response = await fetch(imgUrl);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
-      
+
       const a = document.createElement('a');
       a.href = blobUrl;
       a.download = currentItem.title ? `${currentItem.title}.jpg` : 'design.jpg';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      
+
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error('Download failed', error);
@@ -114,7 +114,7 @@ export function AdvancedLightbox({
   return (
     <AnimatePresence>
       {open && (
-        <div 
+        <div
           ref={overlayRef}
           className="fixed inset-0 z-[100] flex items-center justify-center"
         >
@@ -129,7 +129,7 @@ export function AdvancedLightbox({
           />
 
           {/* Top Toolbar */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
@@ -143,7 +143,7 @@ export function AdvancedLightbox({
                 {currentItem.title || currentItem.sku || 'Design Preview'}
               </span>
             </div>
-            
+
             <div className="flex items-center gap-2">
               {scale > 1 && (
                 <button
@@ -205,7 +205,7 @@ export function AdvancedLightbox({
           )}
 
           {/* Image Container */}
-          <div 
+          <div
             className="relative z-10 w-full h-full flex items-center justify-center overflow-hidden"
             ref={containerRef}
             onClick={onClose}

@@ -21,9 +21,11 @@
 const embeddingService = require("./embeddingService");
 const indexService     = require("./indexService");
 const searchService    = require("./searchService");
+const verificationService = require("./verification/verificationService");
 
 module.exports = {
   embeddingService,
   indexService,
   searchService,
+  verificationService,
 };

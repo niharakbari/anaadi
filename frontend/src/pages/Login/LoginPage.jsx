@@ -82,20 +82,14 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-6 animate-fade-in">
         
         {/* App Logo & Title */}
-        <div className="flex flex-col items-center text-center space-y-2.5">
-          <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-sm">
-            <Gem size={20} className="text-white" />
-          </div>
+        <div className="flex flex-col items-center text-center mb-4">
           <div>
-            <h1 className="text-xl font-bold text-stone-900 tracking-tight leading-none">
-              Anaadi
+            <h1 className="text-3xl font-bold text-stone-900 tracking-tight leading-none">
+              Anaadi<span className="text-accent">.</span>
             </h1>
-            <p className="text-[11px] text-stone-400 font-semibold uppercase tracking-wider mt-1.5">
-              Jewellery AI Search
+            <p className="text-[10px] text-stone-400 font-semibold uppercase tracking-[0.2em] mt-3">
+              Enterprise AI Search
             </p>
-            <Body className="text-stone-500 text-xs mt-1">
-              Internal Enterprise Authentication Portal
-            </Body>
           </div>
         </div>
 

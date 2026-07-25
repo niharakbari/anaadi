@@ -1,4 +1,4 @@
-const controller = require('./src/controllers/designImageController');
+const controller = require('../../src/controllers/designImageController');
 
 const req = {};
 const res = {

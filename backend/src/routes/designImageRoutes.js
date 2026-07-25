@@ -7,6 +7,9 @@ const router = express.Router();
 
 router.get("/", designImageController.getAllImages);
 
+router.get("/import/active", designImageController.getActiveJobs);
+router.get("/import/:jobId", designImageController.getJobStatus);
+
 router.post(
   "/import",
   upload.array("images", MAX_FILES_PER_UPLOAD),

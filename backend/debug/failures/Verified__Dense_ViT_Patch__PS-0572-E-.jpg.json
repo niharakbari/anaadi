@@ -1,0 +1,32 @@
+{
+  "query": "PS-0572-E-.jpg",
+  "expected": "design_1784956197658-497fbcaef5148bcf.JPG",
+  "retrievedRank": 5,
+  "latencyMs": 7849,
+  "top3": [
+    {
+      "id": "950",
+      "storedFilename": "design_1784956197656-315d96efe7e2cce1.JPG",
+      "semanticScore": 0.7374553680419922,
+      "verificationScore": 0.03,
+      "hybridScore": 0.24223661041259764,
+      "filename": "PS-0944-E.JPG"
+    },
+    {
+      "id": "979",
+      "storedFilename": "design_1784956197724-39bfbadeb4a9030f.JPG",
+      "semanticScore": 0.7505447864532471,
+      "verificationScore": 0.02,
+      "hybridScore": 0.2391634359359741,
+      "filename": "ER-0494.JPG"
+    },
+    {
+      "id": "952",
+      "storedFilename": "design_1784956197660-f312eef0b02a4f4f.JPG",
+      "semanticScore": 0.7399072647094727,
+      "verificationScore": 0.02,
+      "hybridScore": 0.23597217941284176,
+      "filename": "PS-0894-E.JPG"
+    }
+  ]
+}
