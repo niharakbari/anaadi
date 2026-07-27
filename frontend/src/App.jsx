@@ -9,7 +9,6 @@ import SearchHistoryPage from './pages/SearchHistory/SearchHistoryPage';
 import SavedSearchesPage from './pages/SavedSearches/SavedSearchesPage';
 import AIStatusPage from './pages/AIStatus/AIStatusPage';
 import SettingsPage from './pages/Settings/SettingsPage';
-import DesignSystemPage from './pages/DesignSystem/DesignSystemPage';
 import NotFoundPage from './pages/NotFound/NotFoundPage';
 
 import { AISearchProvider } from './context/AISearchContext';
@@ -41,8 +40,6 @@ export default function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Route>
 
-          {/* Standalone Design System Preview Sandbox */}
-          <Route path="/design-system" element={<DesignSystemPage />} />
           </Routes>
         </BrowserRouter>
       </ImportJobProvider>

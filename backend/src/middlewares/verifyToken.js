@@ -27,11 +27,14 @@ const verifyToken = (req, res, next) => {
     const token = getTokenFromRequest(req);
 
     if (!token) {
-        return next(new AppError("Please login first.", 401));
+        return res.status(401).json({
+            success: false,
+            code: "MISSING_TOKEN",
+            message: "Please login first."
+        });
     }
 
     try {
-
         const decoded = jwt.verify(
             token,
             config.jwt.token
@@ -42,13 +45,22 @@ const verifyToken = (req, res, next) => {
         next();
 
     } catch (error) {
+        logger.error(`JWT Verification Failed: ${error.name} - ${error.message}`);
 
-        logger.error(`JWT Verification Failed: ${error.message}`);
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                success: false,
+                code: "TOKEN_EXPIRED",
+                message: "Session expired."
+            });
+        }
 
-        return next(new AppError("Invalid or expired token.", 401));
-
+        return res.status(401).json({
+            success: false,
+            code: "INVALID_TOKEN",
+            message: "Invalid token."
+        });
     }
-
 };
 
 module.exports = verifyToken;

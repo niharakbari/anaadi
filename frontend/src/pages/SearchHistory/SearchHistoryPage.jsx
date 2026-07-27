@@ -1,3 +1,4 @@
+import { apiClient } from '../../lib/apiClient';
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAISearch } from '../../context/AISearchContext';
@@ -52,7 +53,7 @@ export default function SearchHistoryPage() {
   const fetchHistory = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/api/search/history?page=${currentPage}&limit=10`, {
+      const res = await apiClient(`${apiBaseUrl}/api/search/history?page=${currentPage}&limit=10`, {
         credentials: 'include'
       });
       if (res.status === 401) {
@@ -82,7 +83,7 @@ export default function SearchHistoryPage() {
     }
 
     try {
-      const res = await fetch(`${apiBaseUrl}/api/search/history`, {
+      const res = await apiClient(`${apiBaseUrl}/api/search/history`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -108,7 +109,7 @@ export default function SearchHistoryPage() {
         const fullUrl = row.query_image_path.startsWith('http') ? row.query_image_path : `${apiBaseUrl}${row.query_image_path}`;
 
         try {
-          const res = await fetch(fullUrl);
+          const res = await apiClient(fullUrl);
           if (!res.ok) throw new Error('Image fetch failed');
           const blob = await res.blob();
 

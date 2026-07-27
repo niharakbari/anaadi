@@ -1,3 +1,4 @@
+import { apiClient } from '../../lib/apiClient';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { H2, Body, Label } from '../../design-system/components/Typography';
 import { SearchInput } from '../../design-system/components/Search';
@@ -95,7 +96,7 @@ export default function AISearchPage() {
 
     setSaving(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/api/saved-searches`, {
+      const res = await apiClient(`${apiBaseUrl}/api/saved-searches`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -137,7 +138,7 @@ export default function AISearchPage() {
       formData.append('image', file);
       formData.append('k', String(limit));
 
-      const res = await fetch(`${apiBaseUrl}/api/search/image`, {
+      const res = await apiClient(`${apiBaseUrl}/api/search/image`, {
         method: 'POST',
         body: formData,
         credentials: 'include',

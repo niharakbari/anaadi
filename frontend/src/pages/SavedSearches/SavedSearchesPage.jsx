@@ -1,3 +1,4 @@
+import { apiClient } from '../../lib/apiClient';
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { H2, Body } from '../../design-system/components/Typography';
@@ -63,7 +64,7 @@ export default function SavedSearchesPage() {
     const fetchSearches = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${apiBaseUrl}/api/saved-searches`, {
+        const res = await apiClient(`${apiBaseUrl}/api/saved-searches`, {
           credentials: 'include'
         });
         if (res.status === 401) {
@@ -119,7 +120,7 @@ export default function SavedSearchesPage() {
 
     setSaving(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/api/saved-searches/${selectedSearch.id}`, {
+      const res = await apiClient(`${apiBaseUrl}/api/saved-searches/${selectedSearch.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: editName.trim(), dealerName: editDealer.trim(), notes: editNotes.trim() }),
@@ -149,7 +150,7 @@ export default function SavedSearchesPage() {
     if (!imgUrl) return;
     const fullUrl = imgUrl.startsWith('http') ? imgUrl : `${apiBaseUrl}${imgUrl}`;
     try {
-      const response = await fetch(fullUrl);
+      const response = await apiClient(fullUrl);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       
@@ -177,7 +178,7 @@ export default function SavedSearchesPage() {
     if (!window.confirm("Are you sure you want to delete this saved search?")) return;
     
     try {
-      const res = await fetch(`${apiBaseUrl}/api/saved-searches/${id}`, {
+      const res = await apiClient(`${apiBaseUrl}/api/saved-searches/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });

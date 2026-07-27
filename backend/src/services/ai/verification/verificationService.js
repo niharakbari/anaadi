@@ -59,8 +59,10 @@ class VerificationService {
         
         featureManager.initialize(config.verification.featuresDir, this._adapter);
         
-        const visualizer = require("./visualizer");
-        await visualizer.initialize();
+        if (config.verification.debugVisualizer) {
+            const visualizer = require("./visualizer");
+            await visualizer.initialize();
+        }
 
         this._isReady = true;
         logger.info(`VerificationService initialized | Driver: ${this._adapter.getContext().name}`);

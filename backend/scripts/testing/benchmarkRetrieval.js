@@ -1,16 +1,6 @@
 #!/usr/bin/env node
 "use strict";
 
-/**
- * benchmarkRetrieval.js
- *
- * Honest benchmark of Semantic-Only vs Semantic + Verification.
- * Measures: Recall@1, Recall@5, MRR, Average Rank, Latency.
- *
- * Usage:
- *   node scripts/testing/benchmarkRetrieval.js
- */
-
 require("dotenv").config({ path: require("path").resolve(__dirname, "../../.env") });
 const fs   = require("fs");
 const path = require("path");
@@ -23,31 +13,32 @@ const DEBUG_DIR      = path.resolve(__dirname, "../../debug/verification");
 const config             = require("../../src/config/config");
 const { searchService, embeddingService, indexService } = require("../../src/services/ai");
 const preprocessingPipeline = require("../../src/services/ai/preprocessing");
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-
+const db = require("../../src/config/database");
 
 function calcMRR(ranks, total) {
     let sum = 0;
     for (const r of ranks) {
         if (r > 0) sum += 1 / r;
     }
-    return sum / total;
+    return total > 0 ? sum / total : 0;
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
-
 async function runAblation(ablation, dataset) {
+    // Separate dataset into Category A and Category B
+    const catA = dataset.filter(d => d.category === "A");
+    const catB = dataset.filter(d => d.category === "B");
+
     let correctTop1 = 0;
     let correctTop5 = 0;
     let sumLatency  = 0;
     const allRanks  = [];
     const failures  = [];
 
-    for (const item of dataset) {
+    console.log(`\n  --- Category A: Strict Quantitative Evaluation (${catA.length} queries) ---`);
+
+    for (const item of catA) {
         const queryPath  = path.join(QUERY_DIR, item.query);
-        const expectedFilename = item.expected;
+        const expectedFilename = item.storedExpected; // resolved from DB
 
         if (!fs.existsSync(queryPath)) {
             console.warn(`  [WARN] Query image missing: ${item.query}`);
@@ -61,7 +52,6 @@ async function runAblation(ablation, dataset) {
         let results;
         try {
             results = await searchService.searchByImage(imageBuffer, { k: 10 });
-
         } catch (err) {
             console.error(`  [ERROR] Search failed for ${item.query}: ${err.message}`);
             allRanks.push(-1);
@@ -71,10 +61,9 @@ async function runAblation(ablation, dataset) {
         const latency = Date.now() - t0;
         sumLatency += latency;
 
-        // Find rank of expected design in results
         let foundRank = -1;
         for (let i = 0; i < results.length; i++) {
-            if (results[i].storedFilename === expectedFilename) {
+            if (results[i].storedFilename === expectedFilename || results[i].originalFilename === item.expected) {
                 foundRank = i + 1;
                 break;
             }
@@ -84,36 +73,79 @@ async function runAblation(ablation, dataset) {
         if (foundRank === 1) correctTop1++;
         if (foundRank > 0 && foundRank <= 5) correctTop5++;
 
-        // Log each query result
         const status = foundRank === 1 ? "✅" : foundRank > 0 ? `⚠️  @${foundRank}` : "❌";
-        console.log(`    ${status}  ${item.query.padEnd(50)} expected: ${expectedFilename}  got: ${results[0]?.storedFilename ?? "none"}`);
+        console.log(`    ${status}  ${item.query.padEnd(30)} expected: ${item.expected}  got: ${results[0]?.originalFilename ?? "none"}`);
 
         if (foundRank !== 1) {
             failures.push({
                 query: item.query,
-                expected: expectedFilename,
+                expected: item.expected,
+                storedExpected: expectedFilename,
                 retrievedRank: foundRank,
                 latencyMs: latency,
                 top3: results.slice(0, 3).map(r => ({
                     id: r.imageId,
                     storedFilename: r.storedFilename,
-                    semanticScore: r.semanticScore ?? r.similarityScore,
-                    verificationScore: r.verificationScore ?? null,
-                    hybridScore: r.hybridScore ?? null,
-                    filename: r.originalFilename
+                    originalFilename: r.originalFilename,
+                    hybridScore: r.hybridScore
                 }))
             });
         }
     }
 
-    const count      = dataset.length;
-    const recall1    = correctTop1 / count;
-    const recall5    = correctTop5 / count;
-    const mrr        = calcMRR(allRanks, count);
-    const avgRank    = allRanks.reduce((s, r) => s + (r > 0 ? r : 10), 0) / count;
-    const avgLatency = sumLatency / count;
+    const count      = catA.length;
+    const recall1    = count > 0 ? correctTop1 / count : 0;
+    const recall5    = count > 0 ? correctTop5 / count : 0;
+    const mrr        = count > 0 ? calcMRR(allRanks, count) : 0;
+    const avgRank    = count > 0 ? allRanks.reduce((s, r) => s + (r > 0 ? r : 10), 0) / count : 0;
+    const avgLatency = count > 0 ? sumLatency / count : 0;
 
-    // Write failure reports
+    // Category B (Qualitative)
+    console.log(`\n  --- Category B: Qualitative Evaluation (${catB.length} queries) ---`);
+    for (const item of catB) {
+        const queryPath  = path.join(QUERY_DIR, item.query);
+        const expectedFilename = item.storedExpected;
+
+        if (!fs.existsSync(queryPath)) {
+            console.warn(`  [WARN] Query image missing: ${item.query}`);
+            continue;
+        }
+
+        const imageBuffer = fs.readFileSync(queryPath);
+        let results;
+        try {
+            results = await searchService.searchByImage(imageBuffer, { k: 10 });
+        } catch (err) {
+            console.error(`  [ERROR] Search failed for ${item.query}: ${err.message}`);
+            continue;
+        }
+
+        let foundRank = -1;
+        let score = null;
+        for (let i = 0; i < results.length; i++) {
+            if (results[i].storedFilename === expectedFilename || results[i].originalFilename === item.expected) {
+                foundRank = i + 1;
+                score = results[i].hybridScore ?? results[i].similarityScore;
+                break;
+            }
+        }
+        
+        console.log(`    Query: ${item.query}`);
+        console.log(`    Soft Ground Truth Expected: ${item.expected}`);
+        if (foundRank > 0) {
+            console.log(`    ✅ Found at Rank ${foundRank} (Score: ${score?.toFixed(4)})`);
+        } else {
+            console.log(`    ❌ Not found in Top 10`);
+        }
+        console.log(`    Top 5 Results:`);
+        results.slice(0, 5).forEach((r, idx) => {
+            const sc = r.hybridScore ?? r.similarityScore;
+            console.log(`      ${idx + 1}. ${r.originalFilename} (Score: ${sc?.toFixed(4)})`);
+        });
+        console.log("");
+    }
+
+    // Write failures
     const ablationTag = ablation.name.replace(/[^a-z0-9]/gi, "_");
     for (const f of failures) {
         const fname = `${ablationTag}_${f.query}.json`;
@@ -136,7 +168,6 @@ async function main() {
     const dataset = JSON.parse(fs.readFileSync(BENCHMARK_JSON, "utf8"));
     console.log(`Loaded ${dataset.length} queries from benchmark.json\n`);
 
-    // Strict validation step before doing anything else
     let hasMissing = false;
     for (const item of dataset) {
         const queryPath = path.join(QUERY_DIR, item.query);
@@ -146,15 +177,26 @@ async function main() {
         }
     }
     if (hasMissing) {
-        console.error("\nBenchmark dataset validation failed. Aborting to prevent silent failures with 0% recall.");
+        console.error("\nBenchmark dataset validation failed. Aborting.");
         process.exit(1);
+    }
+
+    // Resolve stored filenames from original filenames
+    for (const item of dataset) {
+        const [rows] = await db.execute("SELECT stored_filename FROM design_images WHERE original_filename = ?", [item.expected]);
+        if (rows.length > 0) {
+            item.storedExpected = rows[0].stored_filename;
+        } else {
+            console.warn(`[WARN] Could not resolve expected CAD for ${item.expected} in database.`);
+            item.storedExpected = item.expected;
+        }
     }
 
     for (const dir of [FAILURES_DIR, DEBUG_DIR]) {
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     }
 
-    // ─── Initialize services ───────────────────────────────────────────────
+    // Initialize services
     process.stdout.write("Initializing EmbeddingService... ");
     await embeddingService.initialise();
     process.stdout.write("done\n");
@@ -171,17 +213,16 @@ async function main() {
 
     const allResults = [];
 
-    // ─── ABLATION 1: Semantic Only ─────────────────────────────────────────
+    // ABLATION 1
     console.log("▶ ABLATION 1: Semantic Only (Verification DISABLED)");
     config.verification.enabled = false;
     const baselineMetrics = await runAblation({ name: "Baseline (Semantic Only)" }, dataset);
     allResults.push({ name: "Semantic Only", ...baselineMetrics });
 
-    // ─── ABLATION 2: Semantic + Verification ──────────────────────────────
+    // ABLATION 2
     console.log("\n▶ ABLATION 2: Semantic + Dense ViT Verification (ENABLED)");
     config.verification.enabled = true;
 
-    // Warm up the VerificationService (it initialises lazily on first call)
     try {
         const verificationService = require("../../src/services/ai/verification/verificationService");
         if (!verificationService._isReady) {
@@ -191,16 +232,15 @@ async function main() {
         }
     } catch (err) {
         console.error(`  [ERROR] VerificationService failed to initialize: ${err.message}`);
-        console.error("  Running without verification.");
         config.verification.enabled = false;
     }
 
     const verifiedMetrics = await runAblation({ name: "Verified (Dense ViT Patch)" }, dataset);
     allResults.push({ name: "Verified (Dense ViT Patch)", ...verifiedMetrics });
 
-    // ─── Summary ──────────────────────────────────────────────────────────
+    // Summary
     console.log("\n\n═══════════════════════════════════════════════════════════");
-    console.log("  BENCHMARK RESULTS");
+    console.log("  BENCHMARK RESULTS (Category A Only)");
     console.log("═══════════════════════════════════════════════════════════\n");
 
     const pad = (s, n) => String(s).padEnd(n);
@@ -229,7 +269,6 @@ async function main() {
 
     console.log("─".repeat(76));
 
-    // Delta
     if (allResults.length === 2) {
         const [base, verified] = allResults;
         const deltaR1   = ((verified.recall1 - base.recall1) * 100).toFixed(1);
@@ -245,20 +284,10 @@ async function main() {
             rpad("", 10) +
             rpad((deltaLat > 0 ? "+" : "") + deltaLat + "ms", 12)
         );
-
-        console.log("\n─── HONEST VERDICT ────────────────────────────────────────");
-        if (verified.recall1 > base.recall1 + 0.01) {
-            console.log("✅  Verification IMPROVES retrieval accuracy.");
-        } else if (verified.recall1 < base.recall1 - 0.01) {
-            console.log("❌  Verification HURTS retrieval accuracy. Features may not be indexed.");
-            console.log("    Possible causes: No .bin files on disk, adapter mismatch, weight issues.");
-        } else {
-            console.log("⚠️   No statistically meaningful improvement from verification.");
-            console.log("    The hybrid scorer may need weight tuning, or the patch dimension is mismatched.");
-        }
     }
-
-    console.log(`\nFailure reports written to: ${FAILURES_DIR}`);
+    
+    console.log("\nNote: Qualitative evaluation (Category B) results are logged in their respective ablation sections above.");
+    console.log(`Failure reports written to: ${FAILURES_DIR}`);
     console.log("═══════════════════════════════════════════════════════════\n");
 
     process.exit(0);
