@@ -1,3 +1,4 @@
+import { apiClient } from '../../lib/apiClient';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Download, ExternalLink, Maximize } from 'lucide-react';
@@ -86,7 +87,7 @@ export function AdvancedLightbox({
   const handleDownload = async () => {
     if (!imgUrl) return;
     try {
-      const response = await fetch(imgUrl);
+      const response = await apiClient(imgUrl);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
 

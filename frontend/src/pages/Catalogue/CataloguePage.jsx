@@ -1,3 +1,4 @@
+import { apiClient } from '../../lib/apiClient';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Image as ImageIcon, MoreHorizontal, RefreshCw, Trash2, ExternalLink, Loader2, CheckCircle, LayoutList, LayoutGrid } from 'lucide-react';
 import { H2, Body } from '../../design-system/components/Typography';
@@ -46,7 +47,7 @@ export default function CataloguePage() {
       });
       if (s.trim()) queryParams.append('search', s.trim());
 
-      const res = await fetch(`${apiBaseUrl}/api/design-images/?${queryParams.toString()}`, {
+      const res = await apiClient(`${apiBaseUrl}/api/design-images/?${queryParams.toString()}`, {
         credentials: 'include',
       });
       if (res.status === 401) {
@@ -110,7 +111,7 @@ export default function CataloguePage() {
     setToastMessage(null);
 
     try {
-      const res = await fetch(`${apiBaseUrl}/api/design-images/${itemToDelete.id}`, {
+      const res = await apiClient(`${apiBaseUrl}/api/design-images/${itemToDelete.id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -150,7 +151,7 @@ export default function CataloguePage() {
     setToastMessage(null);
 
     try {
-      const res = await fetch(`${apiBaseUrl}/api/design-images/`, {
+      const res = await apiClient(`${apiBaseUrl}/api/design-images/`, {
         method: 'DELETE',
         credentials: 'include',
       });

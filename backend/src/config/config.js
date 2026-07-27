@@ -68,6 +68,7 @@ module.exports = {
 
     verification: {
         enabled: process.env.VERIFICATION_ENABLED === "true",
+        debugVisualizer: process.env.DEBUG_VISUALIZER === "true",
         model: process.env.VERIFICATION_MODEL || "vit-patch",
         candidateCount: Number(process.env.VERIFICATION_CANDIDATE_COUNT) || 10,
         embeddingWeight: Number(process.env.VERIFICATION_EMBEDDING_WEIGHT) || 0.7,

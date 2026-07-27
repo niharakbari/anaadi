@@ -1,3 +1,4 @@
+import { apiClient } from '../lib/apiClient';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext(null);
@@ -11,7 +12,7 @@ export function AuthProvider({ children }) {
 
   const checkAuth = useCallback(async () => {
     try {
-      const res = await fetch(`${apiBaseUrl}/api/auth/me`, {
+      const res = await apiClient(`${apiBaseUrl}/api/auth/me`, {
         credentials: 'include'
       });
       const data = await res.json();
@@ -36,7 +37,7 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     try {
-      await fetch(`${apiBaseUrl}/api/auth/logout`, {
+      await apiClient(`${apiBaseUrl}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include'
       });
@@ -48,16 +49,63 @@ export function AuthProvider({ children }) {
     }
   }, [apiBaseUrl]);
 
-  // Listen for global unauthorized events to automatically log out
+  // Precise Session Timeout Management
   useEffect(() => {
+    if (!isAuthenticated || !user || !user.exp) return;
+
+    const currentTime = Date.now();
+    const expiryTime = user.exp * 1000;
+    const timeRemaining = expiryTime - currentTime;
+
+    if (timeRemaining <= 0) {
+      // Already expired
+      window.dispatchEvent(new CustomEvent('session_expired'));
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('session_expired'));
+    }, timeRemaining);
+
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, user]);
+
+  // Listen for global session events
+  useEffect(() => {
+    let isLoggingOut = false;
+
+    const handleSessionExpired = () => {
+      if (isLoggingOut) return;
+      isLoggingOut = true;
+
+      // Clean local state first to immediately stop UI
+      setIsAuthenticated(false);
+      setUser(null);
+
+      // Attempt to clear cookie on backend
+      apiClient(`${apiBaseUrl}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      }).catch(() => {});
+
+      // Redirect to login with expired flag (triggers toast)
+      window.location.href = '/login?expired=true';
+    };
+
     const handleUnauthorized = () => {
-      // Don't call backend logout if we're already unauthorized by backend
+      if (isLoggingOut) return;
       setIsAuthenticated(false);
       setUser(null);
     };
+
+    window.addEventListener('session_expired', handleSessionExpired);
     window.addEventListener('unauthorized', handleUnauthorized);
-    return () => window.removeEventListener('unauthorized', handleUnauthorized);
-  }, []);
+    
+    return () => {
+      window.removeEventListener('session_expired', handleSessionExpired);
+      window.removeEventListener('unauthorized', handleUnauthorized);
+    };
+  }, [apiBaseUrl]);
 
   const value = {
     isAuthenticated,

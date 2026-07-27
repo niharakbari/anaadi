@@ -1,3 +1,4 @@
+import { apiClient } from '../../lib/apiClient';
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -34,6 +35,15 @@ export default function LoginPage() {
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('expired') === 'true') {
+      addToast('error', 'Session Expired', 'Your login session has expired. Please sign in again.');
+      // Clean up URL to prevent duplicate toasts on refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   const handleSignIn = async (e) => {
     e.preventDefault();
     setError('');
@@ -47,7 +57,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
+      const response = await apiClient(`${apiBaseUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,3 +1,4 @@
+import { apiClient } from '../../lib/apiClient';
 import { useState, useMemo, useEffect } from 'react';
 import { FileText, Cpu, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { H2, Body } from '../../design-system/components/Typography';
@@ -20,7 +21,7 @@ export default function UploadPage() {
   const apiBaseUrl = useMemo(() => (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200').replace(/\/$/, ''), []);
 
   useEffect(() => {
-    fetch(`${apiBaseUrl}/api/health/ai`)
+    apiClient(`${apiBaseUrl}/api/health/ai`)
       .then(res => res.json())
       .then(data => setMetadata(data.metadata))
       .catch(err => console.error("Failed to load metadata in UploadPage:", err));
@@ -64,7 +65,7 @@ export default function UploadPage() {
         formData.append('images', file);
       });
 
-      const response = await fetch(`${apiBaseUrl}/api/design-images/import`, {
+      const response = await apiClient(`${apiBaseUrl}/api/design-images/import`, {
         method: 'POST',
         body: formData,
         credentials: 'include',

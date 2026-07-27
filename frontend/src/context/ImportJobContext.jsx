@@ -1,3 +1,4 @@
+import { apiClient } from '../lib/apiClient';
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 const ImportJobContext = createContext(null);
@@ -11,7 +12,7 @@ export function ImportJobProvider({ children }) {
 
   const checkActiveJobs = useCallback(async () => {
     try {
-      const response = await fetch(`${apiBaseUrl}/api/design-images/import/active`, {
+      const response = await apiClient(`${apiBaseUrl}/api/design-images/import/active`, {
         credentials: 'include'
       });
       if (response.ok) {
@@ -48,7 +49,7 @@ export function ImportJobProvider({ children }) {
     const pollJob = async () => {
       if (!isPolling) return;
       try {
-        const response = await fetch(`${apiBaseUrl}/api/design-images/import/${activeJobId}`, {
+        const response = await apiClient(`${apiBaseUrl}/api/design-images/import/${activeJobId}`, {
           credentials: 'include'
         });
         if (response.ok) {

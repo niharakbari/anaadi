@@ -1,3 +1,4 @@
+import { apiClient } from '../../lib/apiClient';
 import { useState, useEffect, useMemo } from 'react';
 import { LayoutDashboard, Database, Search, Clock, Loader2 } from 'lucide-react';
 import { H2, Body } from '../../design-system/components/Typography';
@@ -14,7 +15,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const res = await fetch(`${apiBaseUrl}/api/dashboard/stats`, {
+        const res = await apiClient(`${apiBaseUrl}/api/dashboard/stats`, {
           credentials: 'include'
         });
 

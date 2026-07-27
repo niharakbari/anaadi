@@ -1,3 +1,4 @@
+import { apiClient } from '../../lib/apiClient';
 import { useState, useEffect, useCallback } from 'react';
 import { Cpu, Server, Activity, RefreshCw } from 'lucide-react';
 import { H2, Body } from '../../design-system/components/Typography';
@@ -16,7 +17,7 @@ export default function AIStatusPage() {
     setLoading(true);
     setError(false);
     try {
-      const response = await fetch(`${apiBaseUrl}/api/health/ai`);
+      const response = await apiClient(`${apiBaseUrl}/api/health/ai`);
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
       setMetadata(data);
