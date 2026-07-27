@@ -7,7 +7,8 @@ module.exports = {
     port: process.env.PORT,
     clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
     ai: {
-        model: process.env.AI_MODEL
+        model: process.env.AI_MODEL,
+        modelsDirectory: process.env.AI_MODELS_DIRECTORY || "ai-models"
     },
 
     database: {
@@ -53,8 +54,8 @@ module.exports = {
         segmentation: {
             enabled: process.env.PREPROCESSING_SEGMENTATION !== "false",
             // Path to the IS-Net ONNX model file
-            modelPath: path.resolve(
-                __dirname, "..", "..", "ai-models", "segmentation", "isnet-general-use.onnx"
+            modelPath: process.env.SEGMENTATION_MODEL_PATH || path.resolve(
+                process.cwd(), process.env.AI_MODELS_DIRECTORY || "ai-models", "segmentation", "isnet-general-use.onnx"
             ),
             // Input resolution expected by IS-Net: 1024 × 1024
             inputSize: 1024,
@@ -69,10 +70,14 @@ module.exports = {
         enabled: process.env.VERIFICATION_ENABLED === "true",
         model: process.env.VERIFICATION_MODEL || "vit-patch",
         candidateCount: Number(process.env.VERIFICATION_CANDIDATE_COUNT) || 10,
-        embeddingWeight: Number(process.env.VERIFICATION_EMBEDDING_WEIGHT) || 0.3,
-        geometryWeight: Number(process.env.VERIFICATION_GEOMETRY_WEIGHT) || 0.7,
+        embeddingWeight: Number(process.env.VERIFICATION_EMBEDDING_WEIGHT) || 0.7,
+        geometryWeight: Number(process.env.VERIFICATION_GEOMETRY_WEIGHT) || 0.3,
         minScore: Number(process.env.VERIFICATION_MIN_SCORE) || 5,
         // Path to store geometric features
-        featuresDir: path.resolve(__dirname, "..", "..", "..", "indexes", "verification", "features")
+        featuresDir: path.resolve(process.cwd(), process.env.INDEX_DIRECTORY || "indexes", "verification", "features")
+    },
+
+    search: {
+        defaultTopK: Number(process.env.SEARCH_DEFAULT_TOP_K) || 10
     }
 };

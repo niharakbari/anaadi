@@ -117,17 +117,30 @@ class VerificationService {
                 if (candidateFeatures) {
                     const vResult = await this._adapter.verify(queryFeatures, candidateFeatures);
                     
-                    // 3. Compute Hybrid Score
-                    const hybridScore = (candidate.similarity * config.verification.embeddingWeight) + 
-                                      (vResult.score * config.verification.geometryWeight);
+                    if (vResult.isValid) {
+                        // 3. Compute Hybrid Score for valid matches
+                        const hybridScore = (candidate.similarity * config.verification.embeddingWeight) + 
+                                          (vResult.score * config.verification.geometryWeight);
 
-                    return {
-                        ...candidate,
-                        semanticScore: candidate.similarity,
-                        verificationScore: vResult.score,
-                        inliers: vResult.inliers,
-                        hybridScore: hybridScore
-                    };
+                        return {
+                            ...candidate,
+                            semanticScore: candidate.similarity,
+                            verificationScore: vResult.score,
+                            inliers: vResult.inliers,
+                            hybridScore: hybridScore,
+                            vDebug: vResult.debug
+                        };
+                    } else {
+                        // Match invalid (e.g. < 10 inliers). Fallback to pure semantic.
+                        return {
+                            ...candidate,
+                            semanticScore: candidate.similarity,
+                            verificationScore: 0,
+                            inliers: vResult.inliers,
+                            hybridScore: candidate.similarity * config.verification.embeddingWeight,
+                            vDebug: vResult.debug
+                        };
+                    }
                 } else {
                     // Fallback to pure semantic score if missing
                     return {

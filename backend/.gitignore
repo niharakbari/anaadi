@@ -31,3 +31,13 @@ ai-models/dinov2/visual.onnx
 .DS_Store
 Thumbs.db
 ehthumbs.db
+
+# Debug / Benchmark Outputs
+debug/
+debug/**
+deeper_audit_results.json
+
+# Temporary query scripts
+test_query*.js
+
+scripts/testing/testSingleQuery.js

@@ -33,7 +33,7 @@ const searchByImage = asyncHandler(async (req, res) => {
     const storedPath = path.join(uploadDir, storedName);
     await fs.writeFile(storedPath, req.file.buffer);
     
-    const dbImagePath = `/uploads/query_uploads/${storedName}`;
+    const dbImagePath = `/${config.upload.queryUploadDirectory || 'uploads/query_uploads'}/${storedName}`;
 
     // 3. Save Search History to Database
     const userId = req.user.id;

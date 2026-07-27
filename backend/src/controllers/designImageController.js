@@ -4,6 +4,7 @@ const imageImportService = require("../services/imageImportService");
 const designImageModel = require("../models/designImageModel");
 const searchService = require("../services/ai/searchService");
 const logger = require("../utils/logger");
+const config = require("../config/config");
 
 const zipImportService = require("../services/zipImportService");
 const importJobService = require("../services/importJobService");
@@ -81,7 +82,7 @@ async function getAllImages(req, res, next) {
       id: img.id,
       filename: img.original_filename,
       storedFilename: img.stored_filename,
-      thumbnail: `/uploads/design_library/${img.stored_filename}`,
+      thumbnail: `/${config.upload.designLibraryDirectory}/${img.stored_filename}`,
       uploadDate: img.uploaded_at,
       status: "indexed",
       fileSize: img.file_size,
@@ -123,7 +124,7 @@ async function deleteImage(req, res, next) {
 
     // 3. Delete physical file from storage
     if (image.stored_filename) {
-      const fullPath = path.resolve(process.cwd(), "uploads", "design_library", image.stored_filename);
+      const fullPath = path.resolve(process.cwd(), config.upload.designLibraryDirectory, image.stored_filename);
       try {
         await fs.unlink(fullPath);
       } catch (err) {
@@ -177,8 +178,8 @@ async function deleteAllImages(req, res, next) {
       }
     };
 
-    await deleteFilesInDir(path.resolve(process.cwd(), "uploads", "design_library"));
-    await deleteFilesInDir(path.resolve(process.cwd(), "uploads", "query_uploads"));
+    await deleteFilesInDir(path.resolve(process.cwd(), config.upload.designLibraryDirectory));
+    await deleteFilesInDir(path.resolve(process.cwd(), config.upload.queryUploadDirectory));
 
     // 3. Clear AI vector index
     let indexVectorsRemoved = delImages.affectedRows;

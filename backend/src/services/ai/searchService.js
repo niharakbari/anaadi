@@ -50,8 +50,6 @@ class SearchService {
     // 4. Merge by design keeping best score (minimum distance)
     const mergedMap = new Map();
     for (const result of allRawResults) {
-      if (result.distance > threshold) continue;
-      
       const existing = mergedMap.get(result.imageId);
       if (!existing || result.distance < existing.distance) {
         mergedMap.set(result.imageId, result);
